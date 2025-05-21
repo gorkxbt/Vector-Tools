@@ -1,3 +1,6 @@
+'use client'
+
+import React from 'react'
 import Navbar from '@/components/Navbar'
 import Hero from '@/components/Hero'
 import Features from '@/components/Features'
@@ -7,9 +10,9 @@ import Footer from '@/components/Footer'
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar />
-      <main className="flex-grow">
+      <main style={{ flexGrow: 1 }}>
         <Hero />
         <Features />
         <Roadmap />

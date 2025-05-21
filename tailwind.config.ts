@@ -40,17 +40,17 @@ const config: Config = {
     
     'my-1', 'my-2', 'my-3', 'my-4', 'my-5',
     'mx-1', 'mx-2', 'mx-3', 'mx-4', 'mx-5', 'mx-auto',
-    'mt-1', 'mt-2', 'mt-3', 'mt-4', 'mt-5',
-    'mb-1', 'mb-2', 'mb-3', 'mb-4', 'mb-5',
+    'mt-1', 'mt-2', 'mt-3', 'mt-4', 'mt-5', 'mt-8',
+    'mb-1', 'mb-2', 'mb-3', 'mb-4', 'mb-5', 'mb-8',
     'ml-1', 'ml-2', 'ml-3', 'ml-4', 'ml-5',
     'mr-1', 'mr-2', 'mr-3', 'mr-4', 'mr-5',
     
-    'gap-1', 'gap-2', 'gap-3', 'gap-4', 'gap-5',
+    'gap-1', 'gap-2', 'gap-3', 'gap-4', 'gap-5', 'gap-8',
     
-    'h-1', 'h-2', 'h-3', 'h-4', 'h-5', 'h-6', 'h-8', 'h-10', 'h-full',
-    'w-1', 'w-2', 'w-3', 'w-4', 'w-5', 'w-6', 'w-8', 'w-10', 'w-full', 'w-fit',
-    'min-w-full',
-    'max-w-[180px]', 'max-w-full',
+    'h-1', 'h-2', 'h-3', 'h-4', 'h-5', 'h-6', 'h-8', 'h-10', 'h-full', 'h-screen',
+    'w-1', 'w-2', 'w-3', 'w-4', 'w-5', 'w-6', 'w-8', 'w-10', 'w-full', 'w-fit', 'w-screen',
+    'min-h-screen', 'min-w-full',
+    'max-w-[180px]', 'max-w-full', 'max-w-md', 'max-w-lg', 'max-w-xl', 'max-w-2xl', 'max-w-3xl', 'max-w-4xl', 'max-w-5xl', 'max-w-6xl', 'max-w-7xl',
     
     // Flex
     'flex', 'flex-row', 'flex-col', 'inline-flex', 'flex-1', 'flex-grow', 'flex-shrink-0',
@@ -58,12 +58,12 @@ const config: Config = {
     'items-start', 'items-end', 'items-center', 'items-baseline', 'items-stretch',
     
     // Borders
-    'rounded', 'rounded-sm', 'rounded-md', 'rounded-lg', 'rounded-xl', 'rounded-2xl', 'rounded-full', 
+    'rounded', 'rounded-sm', 'rounded-md', 'rounded-lg', 'rounded-xl', 'rounded-2xl', 'rounded-3xl', 'rounded-full', 
     'rounded-t', 'rounded-b', 'rounded-l', 'rounded-r',
     'border', 'border-0', 'border-2', 'border-t', 'border-b', 'border-l', 'border-r',
     
     // Typography
-    'text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl',
+    'text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl', 'text-3xl', 'text-4xl', 'text-5xl',
     'font-normal', 'font-medium', 'font-semibold', 'font-bold',
     'uppercase', 'lowercase', 'capitalize', 'normal-case',
     'truncate', 'text-ellipsis', 'whitespace-nowrap',
@@ -73,11 +73,16 @@ const config: Config = {
     'opacity-0', 'opacity-50', 'opacity-100',
     'animate-spin', 'animate-pulse', 'transition', 'transition-colors', 'duration-200', 'duration-300',
     'hover:bg-red-700', 'hover:bg-blue-700', 'hover:bg-gray-50', 'hover:bg-gray-300',
+    'hover:text-white', 'hover:text-red-500', 'group-hover:translate-x-1',
     'focus:ring', 'focus:ring-red-200', 'focus:border-red-300',
-    'overflow-x-auto', 'overflow-y-auto', 'relative', 'absolute',
-    'top-3', 'left-3', 'right-3', 'bottom-3',
+    'overflow-x-auto', 'overflow-y-auto', 'overflow-x-hidden', 'relative', 'absolute',
+    'top-0', 'left-0', 'right-0', 'bottom-0', 'top-3', 'left-3', 'right-3', 'bottom-3',
     'cursor-pointer', 'ring', 'whitespace-nowrap',
     'divide-y', 'divide-gray-200',
+    'z-10', 'z-20', 'z-30', 'z-40', 'z-50',
+    'grid', 'grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4', 'grid-cols-5',
+    'md:grid-cols-2', 'md:grid-cols-3', 'lg:grid-cols-4',
+    'space-y-2', 'space-y-4', 'space-y-8',
   ],
   theme: {
     extend: {

@@ -9,6 +9,7 @@ import { FaArrowLeft, FaCode, FaBook, FaLightbulb, FaRocket, FaChartLine, FaWall
 const Docs = () => {
   const searchParams = useSearchParams()
   const [activeSection, setActiveSection] = useState('overview')
+  const [isMobile, setIsMobile] = useState(true)
   
   useEffect(() => {
     // Get section from URL if available
@@ -17,6 +18,30 @@ const Docs = () => {
       setActiveSection(sectionParam)
     }
   }, [searchParams])
+  
+  useEffect(() => {
+    // Handle window resize
+    const handleResize = () => {
+      if (typeof window !== 'undefined') {
+        setIsMobile(window.innerWidth < 768)
+      }
+    }
+    
+    // Set initial value
+    handleResize()
+    
+    // Add event listener
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize)
+    }
+    
+    // Clean up
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', handleResize)
+      }
+    }
+  }, [])
   
   const sections = [
     { id: 'overview', title: 'Overview', icon: <FaBook /> },
@@ -401,7 +426,11 @@ const Docs = () => {
           </Link>
         </div>
         
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }} className="docs-layout">
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: isMobile ? '1fr' : '16rem 1fr', 
+          gap: '2rem' 
+        }}>
           {/* Sidebar */}
           <div style={{ 
             background: 'var(--glass-effect-bg, rgba(255, 255, 255, 0.8))',
@@ -413,7 +442,7 @@ const Docs = () => {
             position: 'sticky',
             top: '6rem',
             height: 'fit-content'
-          }} className="sidebar">
+          }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1.5rem' }}>Documentation</h2>
             <nav>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
@@ -455,7 +484,7 @@ const Docs = () => {
             padding: '2rem',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
             border: '1px solid #f3f4f6'
-          }} className="content">
+          }}>
             <motion.div
               key={activeSection}
               initial={{ opacity: 0, y: 20 }}
@@ -467,14 +496,6 @@ const Docs = () => {
           </div>
         </div>
       </div>
-      
-      <style jsx>{`
-        @media (minWidth: 768px) {
-          .docs-layout {
-            grid-template-columns: 16rem 1fr;
-          }
-        }
-      `}</style>
     </section>
   )
 }

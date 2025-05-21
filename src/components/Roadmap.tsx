@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { FaRocket, FaDatabase, FaRobot, FaMobile, FaLock, FaCheckCircle } from 'react-icons/fa'
 import { motion } from 'framer-motion'
 

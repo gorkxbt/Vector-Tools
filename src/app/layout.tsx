@@ -1,3 +1,4 @@
+import React from 'react'
 import './globals.css'
 import { Inter } from 'next/font/google'
 import type { Metadata } from 'next'
@@ -17,7 +18,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-screen overflow-x-hidden`} style={{ margin: 0, padding: 0 }}>
+      <body style={{ 
+        fontFamily: inter.variable, 
+        minHeight: '100vh', 
+        overflowX: 'hidden',
+        margin: 0, 
+        padding: 0 
+      }}>
         <ParticleBackground />
         <div style={{ maxWidth: '100vw', overflowX: 'hidden', position: 'relative' }}>
           {children}
