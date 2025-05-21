@@ -45,7 +45,10 @@ const VectorLogo: React.FC<VectorLogoProps> = ({
     });
     renderer.setSize(size, size);
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.outputEncoding = THREE.sRGBEncoding;
+    
+    // Use modern THREE.js color space property instead of deprecated outputEncoding
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
