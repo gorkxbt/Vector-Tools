@@ -95,22 +95,18 @@ interface NewPairsTableProps {
 const RiskBadge = ({ risk }: { risk?: string }) => {
   if (!risk) return null;
   
-  let color, icon, label;
+  let icon, label;
   
   if (risk === 'LOW') {
-    color = 'bg-green-100 text-green-800 border border-green-200';
-    icon = <FaCheckCircle className="mr-1 text-green-600" size={12} />;
+    icon = <FaCheckCircle style={{ marginRight: '0.25rem', color: '#10b981', fontSize: '0.75rem' }} />;
     label = 'Low';
   } else if (risk === 'MEDIUM') {
-    color = 'bg-yellow-100 text-yellow-800 border border-yellow-200';
-    icon = <FaExclamationTriangle className="mr-1 text-yellow-600" size={12} />;
+    icon = <FaExclamationTriangle style={{ marginRight: '0.25rem', color: '#f59e0b', fontSize: '0.75rem' }} />;
     label = 'Medium';
   } else if (risk === 'HIGH') {
-    color = 'bg-red-100 text-red-800 border border-red-200';
-    icon = <FaTimesCircle className="mr-1 text-red-600" size={12} />;
+    icon = <FaTimesCircle style={{ marginRight: '0.25rem', color: '#ef4444', fontSize: '0.75rem' }} />;
     label = 'High';
   } else {
-    color = 'bg-gray-100 text-gray-800 border border-gray-200';
     icon = null;
     label = risk;
   }
@@ -183,8 +179,8 @@ const NewPairsTable = ({ limit, showFilters = true, onSelect }: NewPairsTablePro
 
   // Get sort icon based on current sort state
   const getSortIcon = (field: SortField) => {
-    if (sortField !== field) return <FaSort className="text-gray-400" />;
-    return sortDirection === 'asc' ? <FaSortUp className="text-red-500" /> : <FaSortDown className="text-red-500" />;
+    if (sortField !== field) return <FaSort style={{ color: '#9ca3af' }} />;
+    return sortDirection === 'asc' ? <FaSortUp style={{ color: '#FF2020' }} /> : <FaSortDown style={{ color: '#FF2020' }} />;
   };
 
   // Apply search filter
@@ -309,7 +305,7 @@ const NewPairsTable = ({ limit, showFilters = true, onSelect }: NewPairsTablePro
                 }}
                 title={lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : 'Never updated'}
               >
-                <FaSyncAlt className={isLoading ? 'animate-spin' : ''} size={12} />
+                <FaSyncAlt style={isLoading ? { animation: 'spin 1s linear infinite' } : {}} size={12} />
                 Refresh
               </button>
             </div>
