@@ -99,7 +99,7 @@ const ContactPage: React.FC = () => {
               Contact <span style={{ color: '#FF2020', textShadow: '0 0 5px rgba(255, 32, 32, 0.5)' }}>Us</span>
             </h1>
             <p style={{ fontSize: '1.125rem', color: '#4b5563', maxWidth: '768px', margin: '0 auto' }}>
-              Have questions about Vector Tools? We're here to help.
+              Have questions about Vector Tools? We&apos;re here to help.
             </p>
           </div>
           
@@ -128,7 +128,7 @@ const ContactPage: React.FC = () => {
                     marginBottom: '1.5rem' 
                   }}>
                     <p style={{ fontWeight: '500' }}>Thank you for your message!</p>
-                    <p>We'll get back to you as soon as possible.</p>
+                    <p>We&apos;ll get back to you as soon as possible.</p>
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit}>

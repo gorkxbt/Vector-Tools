@@ -8,10 +8,10 @@ import SocialLink from '@/components/dashboard/SocialLink'
 import { motion } from 'framer-motion'
 import { FaRocket, FaTwitter, FaDiscord, FaGlobe } from 'react-icons/fa'
 import { usePumpFun } from '@/hooks/usePumpFun'
-import { formatCurrency, formatPercent } from '@/utils/formatters'
+import { formatCurrency } from '@/utils/formatters'
 
 const NewPairsPage = () => {
-  const { pairs, filteredPairs, isLoading, refresh } = usePumpFun();
+  const { pairs, isLoading, refresh } = usePumpFun();
   const [stats, setStats] = useState({
     newPairsCount: 0,
     totalVolume: 0,

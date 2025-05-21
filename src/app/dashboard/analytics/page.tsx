@@ -36,7 +36,7 @@ const AnalyticsPage = () => {
           <FaInfoCircle style={{ fontSize: '3rem', color: '#FF2020', marginBottom: '1.5rem' }} />
           <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>Analytics Module Coming Soon</h2>
           <p style={{ fontSize: '1.125rem', maxWidth: '500px', margin: '0 auto 2rem' }}>
-            We're currently developing advanced analytics tools to provide detailed market insights and trend analysis.
+            We&apos;re currently developing advanced analytics tools to provide detailed market insights and trend analysis.
           </p>
         </div>
       </motion.div>

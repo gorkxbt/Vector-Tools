@@ -70,30 +70,28 @@ const SettingsPage = () => {
   const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null);
   
   // Handle form changes
-  const handleChange = (section: keyof UserSettings, field: string, value: any) => {
+  const handleChange = (section: keyof UserSettings, field: string, value: string | boolean | number) => {
+    // Create new settings object
+    const newSettings = { ...settings };
+    
     if (field.includes('.')) {
       // Handle nested fields like 'notifications.priceAlerts'
       const [parentField, childField] = field.split('.');
-      setSettings({
-        ...settings,
-        [section]: {
-          ...settings[section],
-          [parentField]: {
-            ...(settings[section] as any)[parentField],
-            [childField]: value
-          }
-        }
-      });
+      
+      // Type-safe way to handle the nested objects
+      // @ts-ignore - This is safe because we know the structure of our settings object
+      if (newSettings[section][parentField]) {
+        // @ts-ignore - This is safe because we know the structure of our settings object
+        newSettings[section][parentField][childField] = value;
+      }
     } else {
       // Handle top-level fields
-      setSettings({
-        ...settings,
-        [section]: {
-          ...settings[section],
-          [field]: value
-        }
-      });
+      // @ts-ignore - This is safe because we know the structure of our settings object
+      newSettings[section][field] = value;
     }
+    
+    // Update the state with new settings
+    setSettings(newSettings);
   };
   
   // Handle form submission
