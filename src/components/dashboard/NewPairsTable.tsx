@@ -1,8 +1,9 @@
 'use client'
 
-import React from 'react'
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { usePumpFun } from '@/hooks/usePumpFun'
+import { NewPairData } from '@/types/market'
 import { 
   FaFilter, 
   FaSortAmountDown, 
@@ -15,7 +16,12 @@ import {
   FaClock,
   FaHourglassHalf,
   FaArrowUp,
-  FaArrowDown
+  FaArrowDown,
+  FaSort,
+  FaSortUp,
+  FaSortDown,
+  FaCheck,
+  FaSearch
 } from 'react-icons/fa'
 
 // Sorting options
@@ -27,25 +33,6 @@ export interface FilterOptions {
   maxAge?: number; // in hours
   pairWith?: string; // e.g., 'USDC', 'SOL'
   verified?: boolean;
-}
-
-interface NewPairData {
-  address: string;
-  name: string;
-  symbol: string;
-  poolAddress: string;
-  poolSize: number;
-  createdAt: string;
-  pairWithSymbol: string;
-  pairWithAddress: string;
-  initialPrice: number;
-  currentPrice: number;
-  priceChange: number;
-  volume24h: number;
-  txCount: number;
-  holders: number;
-  verified: boolean;
-  rugPullRisk?: string;
 }
 
 // Time ago formatter
@@ -93,596 +80,407 @@ const VerificationBadge = ({ verified }: { verified: boolean }) => (
   </div>
 )
 
-// Mock data for demonstration
-const mockPairs: NewPairData[] = [
-  {
-    address: 'XYZ123456789',
-    name: 'Moon Rocket',
-    symbol: 'MOON',
-    poolAddress: 'POOL123456789',
-    poolSize: 25000,
-    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
-    pairWithSymbol: 'USDC',
-    pairWithAddress: 'USDC123456789',
-    initialPrice: 0.000001,
-    currentPrice: 0.000005,
-    priceChange: 400,
-    volume24h: 15000,
-    txCount: 120,
-    holders: 75,
-    verified: true
-  },
-  {
-    address: 'ABC123456789',
-    name: 'Solana Doge',
-    symbol: 'SOLDOGE',
-    poolAddress: 'POOL987654321',
-    poolSize: 15000,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    pairWithSymbol: 'SOL',
-    pairWithAddress: 'SOL123456789',
-    initialPrice: 0.00002,
-    currentPrice: 0.000015,
-    priceChange: -25,
-    volume24h: 9000,
-    txCount: 85,
-    holders: 50,
-    verified: false
-  },
-  {
-    address: 'DEF123456789',
-    name: 'Pump King',
-    symbol: 'KING',
-    poolAddress: 'POOL567891234',
-    poolSize: 120000,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(), // 12 hours ago
-    pairWithSymbol: 'USDC',
-    pairWithAddress: 'USDC123456789',
-    initialPrice: 0.01,
-    currentPrice: 0.02,
-    priceChange: 100,
-    volume24h: 50000,
-    txCount: 320,
-    holders: 180,
-    verified: true
-  },
-  {
-    address: 'GHI123456789',
-    name: 'Meme Coin',
-    symbol: 'MEME',
-    poolAddress: 'POOL345678912',
-    poolSize: 8000,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(), // 18 hours ago
-    pairWithSymbol: 'USDT',
-    pairWithAddress: 'USDT123456789',
-    initialPrice: 0.0005,
-    currentPrice: 0.0002,
-    priceChange: -60,
-    volume24h: 5000,
-    txCount: 62,
-    holders: 35,
-    verified: false,
-    rugPullRisk: 'High'
-  },
-  {
-    address: 'JKL123456789',
-    name: 'Moon X',
-    symbol: 'MOONX',
-    poolAddress: 'POOL234567891',
-    poolSize: 45000,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), // 6 hours ago
-    pairWithSymbol: 'USDC',
-    pairWithAddress: 'USDC123456789',
-    initialPrice: 0.0001,
-    currentPrice: 0.0006,
-    priceChange: 500,
-    volume24h: 28000,
-    txCount: 210,
-    holders: 95,
-    verified: true
-  }
-];
+// Filter options
+type SortField = 'createdAt' | 'currentPrice' | 'priceChange' | 'poolSize' | 'volume24h' | 'txCount' | 'holders';
+type SortOrder = 'asc' | 'desc';
 
-/**
- * New Pairs Table Component
- * Displays new token pairs from PumpFun with filtering and sorting
- */
-const NewPairsTable = () => {
-  const [pairs, setPairs] = useState<NewPairData[]>(mockPairs);
-  const [filteredPairs, setFilteredPairs] = useState<NewPairData[]>(mockPairs);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<SortOption>('newest');
-  const [filters, setFilters] = useState<FilterOptions>({
-    maxAge: 24
-  });
+interface NewPairsTableProps {
+  limit?: number;
+  showFilters?: boolean;
+  onSelect?: (pair: NewPairData) => void;
+}
+
+const NewPairsTable = ({ limit, showFilters = true, onSelect }: NewPairsTableProps) => {
+  // Use the PumpFun hook to get real data
+  const { 
+    filteredPairs, 
+    isLoading, 
+    error, 
+    setFilter, 
+    clearFilters, 
+    setSort,
+    refresh,
+    lastUpdated
+  } = usePumpFun();
   
-  // Handle filter change
-  const handleFilterChange = (key: keyof FilterOptions, value: any) => {
-    const newFilters = { ...filters, [key]: value };
-    setFilters(newFilters);
-    applyFilters(newFilters);
-  }
-  
-  // Apply filters and sorting
-  const applyFilters = (newFilters: FilterOptions) => {
-    let result = [...pairs];
-    
-    // Apply filters
-    if (newFilters.minPoolSize) {
-      result = result.filter(pair => pair.poolSize >= (newFilters.minPoolSize || 0));
+  // Local state for UI
+  const [sortField, setSortField] = useState<SortField>('createdAt');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterVerified, setFilterVerified] = useState<boolean | undefined>(undefined);
+  const [minPoolSize, setMinPoolSize] = useState<number | undefined>(undefined);
+  const [riskLevel, setRiskLevel] = useState<'LOW' | 'MEDIUM' | 'HIGH' | null>(null);
+
+  // Apply sorting when it changes
+  useEffect(() => {
+    setSort(sortField, sortDirection);
+  }, [sortField, sortDirection, setSort]);
+
+  // Handle sort header click
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Toggle direction if same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New field, default to descending for most fields except creation date
+      setSortField(field);
+      setSortDirection(field === 'createdAt' ? 'desc' : 'desc');
     }
+  };
+
+  // Get sort icon based on current sort state
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return <FaSort className="text-gray-400" />;
+    return sortDirection === 'asc' ? <FaSortUp className="text-red-500" /> : <FaSortDown className="text-red-500" />;
+  };
+
+  // Apply search filter
+  const handleSearch = () => {
+    setFilter({ search: searchTerm });
+  };
+
+  // Apply all filters
+  const applyFilters = () => {
+    setFilter({
+      verified: filterVerified,
+      minPoolSize,
+      riskLevel
+    });
+  };
+
+  // Reset all filters
+  const resetFilters = () => {
+    setSearchTerm('');
+    setFilterVerified(undefined);
+    setMinPoolSize(undefined);
+    setRiskLevel(null);
+    clearFilters();
+  };
+
+  // Format date relative to now
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
     
-    if (newFilters.pairWith) {
-      result = result.filter(pair => pair.pairWithSymbol.toLowerCase() === newFilters.pairWith?.toLowerCase());
+    if (diffMins < 60) {
+      return `${diffMins}m ago`;
+    } else if (diffMins < 1440) {
+      return `${Math.floor(diffMins / 60)}h ago`;
+    } else {
+      return `${Math.floor(diffMins / 1440)}d ago`;
     }
+  };
+
+  // Format number with appropriate suffix
+  const formatNumber = (num: number, decimals = 2) => {
+    if (num === null || num === undefined) return 'N/A';
     
-    if (newFilters.maxAge) {
-      const cutoffTime = new Date();
-      cutoffTime.setHours(cutoffTime.getHours() - (newFilters.maxAge || 24));
-      result = result.filter(pair => new Date(pair.createdAt) >= cutoffTime);
+    if (num >= 1000000) {
+      return `$${(num / 1000000).toFixed(decimals)}M`;
+    } else if (num >= 1000) {
+      return `$${(num / 1000).toFixed(decimals)}K`;
+    } else {
+      return `$${num.toFixed(decimals)}`;
     }
+  };
+
+  // Format percent change
+  const formatPercent = (value: number) => {
+    if (value === null || value === undefined) return 'N/A';
     
-    if (newFilters.verified !== undefined) {
-      result = result.filter(pair => pair.verified === newFilters.verified);
-    }
-    
-    // Apply sorting
-    switch (sortBy) {
-      case 'newest':
-        result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        break;
-      case 'poolSize':
-        result.sort((a, b) => b.poolSize - a.poolSize);
-        break;
-      case 'priceChange':
-        result.sort((a, b) => b.priceChange - a.priceChange);
-        break;
-      case 'volume':
-        result.sort((a, b) => b.volume24h - a.volume24h);
-        break;
-    }
-    
-    setFilteredPairs(result);
-  }
-  
-  // Refresh data
-  const refresh = () => {
-    setLoading(true);
-    
-    // Simulate API call with a delay
-    setTimeout(() => {
-      // In a real app, this would be an API call
-      setPairs(mockPairs);
-      applyFilters(filters);
-      setLoading(false);
-    }, 1000);
-  }
-  
-  // Predefined filters
-  const timeFilters = [
-    { label: '1H', value: 1 },
-    { label: '6H', value: 6 },
-    { label: '24H', value: 24 },
-    { label: '7D', value: 168 },
-    { label: 'All', value: undefined }
-  ]
-  
-  const poolSizeFilters = [
-    { label: 'All', value: undefined },
-    { label: '> $100', value: 100 },
-    { label: '> $1K', value: 1000 },
-    { label: '> $10K', value: 10000 },
-    { label: '> $100K', value: 100000 }
-  ]
-  
-  const pairWithFilters = [
-    { label: 'All', value: undefined },
-    { label: 'USDC', value: 'USDC' },
-    { label: 'SOL', value: 'SOL' },
-    { label: 'USDT', value: 'USDT' }
-  ]
-  
-  if (loading && pairs.length === 0) {
+    const isPositive = value >= 0;
     return (
-      <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-        <FaSpinner style={{ fontSize: '2rem', color: '#FF2020', animation: 'spin 1s linear infinite' }} />
-        <p style={{ marginTop: '1rem' }}>Loading new pairs...</p>
-        <style jsx global>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
-    )
-  }
-  
-  if (error) {
+      <span className={isPositive ? 'text-green-500' : 'text-red-500'}>
+        {isPositive ? '+' : ''}{value.toFixed(2)}%
+      </span>
+    );
+  };
+
+  // Handle clicking on a row
+  const handleRowClick = (pair: NewPairData) => {
+    if (onSelect) {
+      onSelect(pair);
+    }
+  };
+
+  // Risk badge component
+  const RiskBadge = ({ risk }: { risk?: string }) => {
+    if (!risk) return null;
+    
+    let color = 'bg-gray-200 text-gray-800';
+    
+    if (risk === 'LOW') {
+      color = 'bg-green-100 text-green-800';
+    } else if (risk === 'MEDIUM') {
+      color = 'bg-yellow-100 text-yellow-800';
+    } else if (risk === 'HIGH') {
+      color = 'bg-red-100 text-red-800';
+    }
+    
     return (
-      <div style={{ 
-        padding: '2rem', 
-        textAlign: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.7)',
-        backdropFilter: 'blur(8px)',
-        borderRadius: '0.75rem',
-        border: '1px solid #f3f4f6'
-      }}>
-        <FaExclamationTriangle style={{ fontSize: '2rem', color: '#FF2020', marginBottom: '1rem' }} />
-        <h3 style={{ marginBottom: '1rem', fontWeight: 'bold' }}>Error Loading New Pairs</h3>
-        <p>{error}</p>
-        <button 
-          onClick={() => refresh()}
-          style={{ 
-            marginTop: '1rem', 
-            padding: '0.5rem 1rem', 
-            backgroundColor: '#FF2020', 
-            color: 'white', 
-            border: 'none',
-            borderRadius: '0.5rem',
-            cursor: 'pointer'
-          }}
-        >
-          Try Again
-        </button>
-      </div>
-    )
-  }
+      <span className={`px-2 py-1 rounded-full text-xs ${color}`}>
+        {risk}
+      </span>
+    );
+  };
+
+  // Display pairs with limit if specified
+  const displayPairs = limit ? filteredPairs.slice(0, limit) : filteredPairs;
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      {/* Filter Panel */}
-      <div style={{ 
-        padding: '1rem',
-        backgroundColor: 'rgba(255, 255, 255, 0.7)',
-        backdropFilter: 'blur(8px)',
-        borderRadius: '0.75rem',
-        marginBottom: '1.5rem',
-        border: '1px solid #f3f4f6'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <FaFilter style={{ color: '#FF2020', marginRight: '0.5rem' }} />
-            <h3 style={{ fontWeight: 'bold' }}>Filter New Pairs</h3>
-          </div>
-          
-          <button
-            onClick={() => refresh()}
-            style={{ 
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '0.5rem 1rem',
-              backgroundColor: 'rgba(255, 32, 32, 0.1)',
-              color: '#FF2020',
-              borderRadius: '0.5rem',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '0.875rem'
-            }}
-          >
-            {loading ? (
-              <FaSpinner style={{ animation: 'spin 1s linear infinite', marginRight: '0.5rem' }} />
-            ) : (
-              <FaSyncAlt style={{ marginRight: '0.5rem' }} />
-            )}
-            {loading ? 'Refreshing...' : 'Refresh Data'}
-          </button>
-        </div>
-        
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
-          {/* Age filter */}
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Time</div>
-            <div style={{ 
-              display: 'inline-flex',
-              backgroundColor: 'rgba(255, 255, 255, 0.7)',
-              backdropFilter: 'blur(4px)',
-              borderRadius: '0.5rem',
-              padding: '0.25rem'
-            }}>
-              {timeFilters.map((option) => (
-                <button
-                  key={option.label}
-                  onClick={() => handleFilterChange('maxAge', option.value)}
-                  style={{
-                    padding: '0.375rem 0.75rem',
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                    borderRadius: '0.375rem',
-                    border: 'none',
-                    backgroundColor: filters.maxAge === option.value ? '#FF2020' : 'transparent',
-                    color: filters.maxAge === option.value ? 'white' : '#6b7280',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {option.label}
-                </button>
-              ))}
+    <div className="w-full">
+      {/* Filters section */}
+      {showFilters && (
+        <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex flex-col md:flex-row gap-4 mb-4">
+            <div className="flex-1">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search by name, symbol or address..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full p-2 pl-10 rounded border border-gray-300 focus:border-red-300 focus:ring focus:ring-red-200"
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+                <FaSearch className="absolute left-3 top-3 text-gray-400" />
+              </div>
             </div>
-          </div>
-          
-          {/* Pool size filter */}
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Pool Size</div>
-            <div style={{ 
-              display: 'inline-flex',
-              backgroundColor: 'rgba(255, 255, 255, 0.7)',
-              backdropFilter: 'blur(4px)',
-              borderRadius: '0.5rem',
-              padding: '0.25rem'
-            }}>
-              {poolSizeFilters.map((option) => (
-                <button
-                  key={option.label}
-                  onClick={() => handleFilterChange('minPoolSize', option.value)}
-                  style={{
-                    padding: '0.375rem 0.75rem',
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                    borderRadius: '0.375rem',
-                    border: 'none',
-                    backgroundColor: filters.minPoolSize === option.value ? '#FF2020' : 'transparent',
-                    color: filters.minPoolSize === option.value ? 'white' : '#6b7280',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          {/* Paired with filter */}
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Paired With</div>
-            <div style={{ 
-              display: 'inline-flex',
-              backgroundColor: 'rgba(255, 255, 255, 0.7)',
-              backdropFilter: 'blur(4px)',
-              borderRadius: '0.5rem',
-              padding: '0.25rem'
-            }}>
-              {pairWithFilters.map((option) => (
-                <button
-                  key={option.label}
-                  onClick={() => handleFilterChange('pairWith', option.value)}
-                  style={{
-                    padding: '0.375rem 0.75rem',
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                    borderRadius: '0.375rem',
-                    border: 'none',
-                    backgroundColor: filters.pairWith === option.value ? '#FF2020' : 'transparent',
-                    color: filters.pairWith === option.value ? 'white' : '#6b7280',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          {/* Verified filter */}
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Verification</div>
-            <div style={{ 
-              display: 'inline-flex',
-              backgroundColor: 'rgba(255, 255, 255, 0.7)',
-              backdropFilter: 'blur(4px)',
-              borderRadius: '0.5rem',
-              padding: '0.25rem'
-            }}>
+            
+            <div className="flex gap-2">
               <button
-                onClick={() => handleFilterChange('verified', undefined)}
-                style={{
-                  padding: '0.375rem 0.75rem',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  borderRadius: '0.375rem',
-                  border: 'none',
-                  backgroundColor: filters.verified === undefined ? '#FF2020' : 'transparent',
-                  color: filters.verified === undefined ? 'white' : '#6b7280',
-                  cursor: 'pointer'
-                }}
+                onClick={handleSearch}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
               >
-                All
+                Search
               </button>
               <button
-                onClick={() => handleFilterChange('verified', true)}
-                style={{
-                  padding: '0.375rem 0.75rem',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  borderRadius: '0.375rem',
-                  border: 'none',
-                  backgroundColor: filters.verified === true ? '#FF2020' : 'transparent',
-                  color: filters.verified === true ? 'white' : '#6b7280',
-                  cursor: 'pointer'
-                }}
+                onClick={resetFilters}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition"
               >
-                Verified
+                Reset
               </button>
               <button
-                onClick={() => handleFilterChange('verified', false)}
-                style={{
-                  padding: '0.375rem 0.75rem',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  borderRadius: '0.375rem',
-                  border: 'none',
-                  backgroundColor: filters.verified === false ? '#FF2020' : 'transparent',
-                  color: filters.verified === false ? 'white' : '#6b7280',
-                  cursor: 'pointer'
-                }}
+                onClick={refresh}
+                className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition flex items-center"
               >
-                Unverified
+                <FaSyncAlt className="mr-1" /> Refresh
               </button>
             </div>
           </div>
-        </div>
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
-          <div>
-            Showing {filteredPairs.length} of {pairs.length} pairs
+          
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="w-full md:w-1/3">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Verification</label>
+              <select
+                value={filterVerified === undefined ? '' : filterVerified ? 'verified' : 'unverified'}
+                onChange={(e) => {
+                  if (e.target.value === 'verified') setFilterVerified(true);
+                  else if (e.target.value === 'unverified') setFilterVerified(false);
+                  else setFilterVerified(undefined);
+                }}
+                className="w-full p-2 rounded border border-gray-300 focus:border-red-300 focus:ring focus:ring-red-200"
+              >
+                <option value="">All tokens</option>
+                <option value="verified">Verified only</option>
+                <option value="unverified">Unverified only</option>
+              </select>
+            </div>
+            
+            <div className="w-full md:w-1/3">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Min. Pool Size</label>
+              <select
+                value={minPoolSize || ''}
+                onChange={(e) => setMinPoolSize(e.target.value ? Number(e.target.value) : undefined)}
+                className="w-full p-2 rounded border border-gray-300 focus:border-red-300 focus:ring focus:ring-red-200"
+              >
+                <option value="">Any size</option>
+                <option value="1000">$1,000+</option>
+                <option value="10000">$10,000+</option>
+                <option value="50000">$50,000+</option>
+                <option value="100000">$100,000+</option>
+              </select>
+            </div>
+            
+            <div className="w-full md:w-1/3">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Risk Level</label>
+              <select
+                value={riskLevel || ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setRiskLevel(val ? val as 'LOW' | 'MEDIUM' | 'HIGH' : null);
+                }}
+                className="w-full p-2 rounded border border-gray-300 focus:border-red-300 focus:ring focus:ring-red-200"
+              >
+                <option value="">Any risk</option>
+                <option value="LOW">Low risk</option>
+                <option value="MEDIUM">Medium risk</option>
+                <option value="HIGH">High risk</option>
+              </select>
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span>Sort by:</span>
-            <select 
-              value={sortBy}
-              onChange={(e) => {
-                setSortBy(e.target.value as SortOption);
-                applyFilters(filters);
-              }}
-              style={{ 
-                padding: '0.25rem 0.5rem',
-                borderRadius: '0.25rem',
-                border: '1px solid #e5e7eb',
-                backgroundColor: 'white',
-                fontSize: '0.875rem'
-              }}
+          
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={applyFilters}
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition flex items-center"
             >
-              <option value="newest">Newest First</option>
-              <option value="poolSize">Pool Size</option>
-              <option value="priceChange">Price Change</option>
-              <option value="volume">Trading Volume</option>
-            </select>
+              <FaFilter className="mr-2" /> Apply Filters
+            </button>
           </div>
         </div>
-      </div>
+      )}
       
-      {/* Pairs Table */}
-      {filteredPairs.length === 0 ? (
-        <div style={{ 
-          padding: '3rem 1rem', 
-          textAlign: 'center',
-          backgroundColor: 'rgba(255, 255, 255, 0.7)',
-          backdropFilter: 'blur(8px)',
-          borderRadius: '0.75rem',
-          border: '1px solid #f3f4f6'
-        }}>
-          <FaClock style={{ fontSize: '2rem', color: '#FF2020', marginBottom: '1rem' }} />
-          <h3 style={{ marginBottom: '0.5rem', fontWeight: 'bold' }}>No Pairs Found</h3>
-          <p style={{ color: '#6b7280', maxWidth: '400px', margin: '0 auto' }}>
-            No token pairs match your current filter criteria. Try adjusting your filters or check back later.
-          </p>
+      {/* Last updated info */}
+      {lastUpdated && (
+        <div className="text-right text-sm text-gray-500 mb-2">
+          Last updated: {lastUpdated.toLocaleTimeString()}
         </div>
-      ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ 
-            width: '100%',
-            borderCollapse: 'separate',
-            borderSpacing: '0', 
-            backgroundColor: 'rgba(255, 255, 255, 0.7)',
-            backdropFilter: 'blur(8px)',
-            borderRadius: '0.75rem',
-            overflow: 'hidden',
-            border: '1px solid #f3f4f6'
-          }}>
-            <thead>
+      )}
+      
+      {/* Error message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded mb-4">
+          {error}
+        </div>
+      )}
+      
+      {/* Loading state */}
+      {isLoading && (
+        <div className="text-center p-10">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-600 mb-2"></div>
+          <p className="text-gray-600">Loading token pairs...</p>
+        </div>
+      )}
+      
+      {/* Results table */}
+      {!isLoading && (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
+            <thead className="bg-gray-50">
               <tr>
-                <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #f3f4f6', fontWeight: '600', color: '#374151' }}>Token</th>
-                <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #f3f4f6', fontWeight: '600', color: '#374151' }}>Paired With</th>
-                <th style={{ padding: '1rem', textAlign: 'right', borderBottom: '1px solid #f3f4f6', fontWeight: '600', color: '#374151' }}>Pool Size</th>
-                <th style={{ padding: '1rem', textAlign: 'right', borderBottom: '1px solid #f3f4f6', fontWeight: '600', color: '#374151' }}>Current Price</th>
-                <th style={{ padding: '1rem', textAlign: 'right', borderBottom: '1px solid #f3f4f6', fontWeight: '600', color: '#374151' }}>Change</th>
-                <th style={{ padding: '1rem', textAlign: 'right', borderBottom: '1px solid #f3f4f6', fontWeight: '600', color: '#374151' }}>Volume 24h</th>
-                <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid #f3f4f6', fontWeight: '600', color: '#374151' }}>Verified</th>
-                <th style={{ padding: '1rem', textAlign: 'right', borderBottom: '1px solid #f3f4f6', fontWeight: '600', color: '#374151' }}>Age</th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSort('createdAt')}
+                >
+                  <div className="flex items-center">
+                    Created {getSortIcon('createdAt')}
+                  </div>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <div className="flex items-center">
+                    Token
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSort('currentPrice')}
+                >
+                  <div className="flex items-center">
+                    Price {getSortIcon('currentPrice')}
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSort('priceChange')}
+                >
+                  <div className="flex items-center">
+                    Change {getSortIcon('priceChange')}
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSort('poolSize')}
+                >
+                  <div className="flex items-center">
+                    Liquidity {getSortIcon('poolSize')}
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSort('volume24h')}
+                >
+                  <div className="flex items-center">
+                    Volume 24h {getSortIcon('volume24h')}
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSort('holders')}
+                >
+                  <div className="flex items-center">
+                    Holders {getSortIcon('holders')}
+                  </div>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
               </tr>
             </thead>
-            <tbody>
-              {filteredPairs.map((pair, index) => (
-                <motion.tr 
-                  key={pair.address}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05, duration: 0.3 }}
-                  style={{
-                    transition: 'background-color 0.2s',
-                    backgroundColor: index % 2 === 0 ? 'transparent' : 'rgba(249, 250, 251, 0.5)'
-                  }}
-                  whileHover={{ backgroundColor: 'rgba(255, 32, 32, 0.05)' }}
-                >
-                  <td style={{ padding: '1rem', borderBottom: '1px solid #f3f4f6' }}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <div style={{ 
-                        width: '2rem', 
-                        height: '2rem', 
-                        borderRadius: '9999px', 
-                        backgroundColor: '#FF2020', 
-                        color: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 'bold',
-                        marginRight: '0.75rem',
-                        fontSize: '0.875rem'
-                      }}>
-                        {pair.symbol.charAt(0)}
+            <tbody className="bg-white divide-y divide-gray-200">
+              {displayPairs.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="p-4 text-center text-gray-500">
+                    No token pairs found. Try adjusting your filters.
+                  </td>
+                </tr>
+              ) : (
+                displayPairs.map((pair) => (
+                  <tr 
+                    key={pair.address} 
+                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => handleRowClick(pair)}
+                  >
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{formatDate(pair.createdAt)}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="mr-2 flex-shrink-0 h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+                          {pair.symbol.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {pair.symbol}
+                            {pair.verified && (
+                              <FaCheck className="inline-block ml-1 text-green-500" size={12} />
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500">{pair.name}</div>
+                        </div>
                       </div>
-                      <div>
-                        <div style={{ fontWeight: '500' }}>{pair.symbol}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{pair.name.length > 20 ? pair.name.slice(0, 20) + '...' : pair.name}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{formatNumber(pair.currentPrice, 8)}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm">{formatPercent(pair.priceChange)}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{formatNumber(pair.poolSize)}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{formatNumber(pair.volume24h)}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{pair.holders.toLocaleString()}</div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        <RiskBadge risk={pair.rugPullRisk} />
                       </div>
-                    </div>
-                  </td>
-                  <td style={{ padding: '1rem', borderBottom: '1px solid #f3f4f6' }}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <div style={{ 
-                        width: '1.5rem', 
-                        height: '1.5rem', 
-                        borderRadius: '9999px', 
-                        backgroundColor: '#6b7280', 
-                        color: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 'bold',
-                        marginRight: '0.5rem',
-                        fontSize: '0.75rem'
-                      }}>
-                        {pair.pairWithSymbol.charAt(0)}
-                      </div>
-                      <span>{pair.pairWithSymbol}</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '1rem', textAlign: 'right', borderBottom: '1px solid #f3f4f6', fontWeight: '500' }}>
-                    ${pair.poolSize.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                  </td>
-                  <td style={{ padding: '1rem', textAlign: 'right', borderBottom: '1px solid #f3f4f6', fontWeight: '500' }}>
-                    ${pair.currentPrice < 0.01 
-                      ? pair.currentPrice.toExponential(2) 
-                      : pair.currentPrice.toLocaleString(undefined, { maximumFractionDigits: pair.currentPrice < 0.1 ? 4 : 2 })}
-                  </td>
-                  <td style={{ padding: '1rem', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
-                    <PriceChange value={pair.priceChange} />
-                  </td>
-                  <td style={{ padding: '1rem', textAlign: 'right', borderBottom: '1px solid #f3f4f6', fontWeight: '500' }}>
-                    ${pair.volume24h.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                  </td>
-                  <td style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
-                    <VerificationBadge verified={pair.verified} />
-                  </td>
-                  <td style={{ padding: '1rem', textAlign: 'right', borderBottom: '1px solid #f3f4f6', fontSize: '0.875rem', color: '#6b7280' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                      <FaHourglassHalf style={{ marginRight: '0.375rem', fontSize: '0.75rem' }} />
-                      {formatTimeAgo(pair.createdAt)}
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       )}
-    </motion.div>
-  )
-}
+    </div>
+  );
+};
 
-export default NewPairsTable 
+export default NewPairsTable; 
