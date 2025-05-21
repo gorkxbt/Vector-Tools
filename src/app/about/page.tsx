@@ -155,7 +155,7 @@ const AboutPage: React.FC = () => {
               margin: '0 auto', 
               fontStyle: 'italic' 
             }}>
-              "To democratize advanced crypto trading tools by combining AI, social signals, and secure wallet integration in a user-friendly platform."
+              &quot;To democratize advanced crypto trading tools by combining AI, social signals, and secure wallet integration in a user-friendly platform.&quot;
             </p>
           </div>
           
