@@ -5,10 +5,13 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { FaLinkedin, FaGithub, FaTwitter } from 'react-icons/fa'
 
-export default function AboutPage() {
+const AboutPage: React.FC = () => {
   const [isMobile, setIsMobile] = useState(true);
 
   useEffect(() => {
+    // Only run this effect on the client side
+    if (typeof window === 'undefined') return;
+    
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
@@ -22,6 +25,27 @@ export default function AboutPage() {
     // Clean up
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const socialIcons = [
+    { icon: FaTwitter, link: '#', label: 'Twitter' },
+    { icon: FaLinkedin, link: '#', label: 'LinkedIn' },
+    { icon: FaGithub, link: '#', label: 'GitHub' }
+  ];
+
+  const coreValues = [
+    {
+      title: 'Innovation',
+      description: 'We continuously push the boundaries of what\'s possible with AI and blockchain technology to provide traders with the most advanced tools.'
+    },
+    {
+      title: 'Security',
+      description: 'We prioritize the security of your assets and data, ensuring that your wallet connections and trades are protected with the highest standards.'
+    },
+    {
+      title: 'Community',
+      description: 'We\'re building a community of traders who share insights, strategies, and feedback to help everyone succeed in the Solana ecosystem.'
+    }
+  ];
 
   return (
     <>
@@ -84,39 +108,32 @@ export default function AboutPage() {
               </p>
               
               <div style={{ display: 'flex', gap: '1rem' }}>
-                <a href="#" style={{ 
-                  padding: '0.75rem', 
-                  backgroundColor: '#f3f4f6', 
-                  borderRadius: '9999px', 
-                  color: '#4b5563', 
-                  transition: 'all 0.2s'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.color = '#FF2020'}
-                onMouseOut={(e) => e.currentTarget.style.color = '#4b5563'}>
-                  <FaTwitter size={20} />
-                </a>
-                <a href="#" style={{ 
-                  padding: '0.75rem', 
-                  backgroundColor: '#f3f4f6', 
-                  borderRadius: '9999px', 
-                  color: '#4b5563', 
-                  transition: 'all 0.2s'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.color = '#FF2020'}
-                onMouseOut={(e) => e.currentTarget.style.color = '#4b5563'}>
-                  <FaLinkedin size={20} />
-                </a>
-                <a href="#" style={{ 
-                  padding: '0.75rem', 
-                  backgroundColor: '#f3f4f6', 
-                  borderRadius: '9999px', 
-                  color: '#4b5563', 
-                  transition: 'all 0.2s'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.color = '#FF2020'}
-                onMouseOut={(e) => e.currentTarget.style.color = '#4b5563'}>
-                  <FaGithub size={20} />
-                </a>
+                {socialIcons.map((social, index) => {
+                  const Icon = social.icon;
+                  return (
+                    <a 
+                      key={index}
+                      href={social.link} 
+                      aria-label={social.label}
+                      style={{ 
+                        padding: '0.75rem', 
+                        backgroundColor: '#f3f4f6', 
+                        borderRadius: '9999px', 
+                        color: '#4b5563', 
+                        transition: 'all 0.2s',
+                        display: 'flex'
+                      }}
+                      onMouseOver={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                        e.currentTarget.style.color = '#FF2020';
+                      }}
+                      onMouseOut={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                        e.currentTarget.style.color = '#4b5563';
+                      }}
+                    >
+                      <Icon size={20} />
+                    </a>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -147,48 +164,31 @@ export default function AboutPage() {
             gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', 
             gap: '2rem'
           }}>
-            <div style={{ 
-              padding: '1.5rem', 
-              backgroundColor: 'white', 
-              borderRadius: '0.5rem', 
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)', 
-              border: '1px solid #f3f4f6' 
-            }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.75rem', color: '#FF2020' }}>Innovation</h3>
-              <p style={{ color: '#4b5563' }}>
-                We continuously push the boundaries of what's possible with AI and blockchain technology to provide traders with the most advanced tools.
-              </p>
-            </div>
-            
-            <div style={{ 
-              padding: '1.5rem', 
-              backgroundColor: 'white', 
-              borderRadius: '0.5rem', 
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)', 
-              border: '1px solid #f3f4f6' 
-            }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.75rem', color: '#FF2020' }}>Security</h3>
-              <p style={{ color: '#4b5563' }}>
-                We prioritize the security of your assets and data, ensuring that your wallet connections and trades are protected with the highest standards.
-              </p>
-            </div>
-            
-            <div style={{ 
-              padding: '1.5rem', 
-              backgroundColor: 'white', 
-              borderRadius: '0.5rem', 
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)', 
-              border: '1px solid #f3f4f6' 
-            }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.75rem', color: '#FF2020' }}>Community</h3>
-              <p style={{ color: '#4b5563' }}>
-                We're building a community of traders who share insights, strategies, and feedback to help everyone succeed in the Solana ecosystem.
-              </p>
-            </div>
+            {coreValues.map((value, index) => (
+              <div 
+                key={index}
+                style={{ 
+                  padding: '1.5rem', 
+                  backgroundColor: 'white', 
+                  borderRadius: '0.5rem', 
+                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)', 
+                  border: '1px solid #f3f4f6' 
+                }}
+              >
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.75rem', color: '#FF2020' }}>
+                  {value.title}
+                </h3>
+                <p style={{ color: '#4b5563' }}>
+                  {value.description}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </main>
       <Footer />
     </>
   )
-} 
+}
+
+export default AboutPage 
