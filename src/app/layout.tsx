@@ -1,14 +1,10 @@
+'use client'
+
 import React from 'react'
 import './globals.css'
 import { Outfit } from 'next/font/google'
 import type { Metadata } from 'next'
-import dynamic from 'next/dynamic'
-
-// Use dynamic import for the 3D components to avoid SSR issues
-const TradingBackground = dynamic(
-  () => import('@/components/3D/TradingBackground'),
-  { ssr: false }
-)
+import BackgroundWrapper from '@/components/3D/BackgroundWrapper'
 
 const outfit = Outfit({ 
   subsets: ['latin'],
@@ -35,7 +31,7 @@ export default function RootLayout({
         margin: 0, 
         padding: 0 
       }}>
-        <TradingBackground />
+        <BackgroundWrapper />
         <div style={{ maxWidth: '100vw', overflowX: 'hidden', position: 'relative' }}>
           {children}
         </div>
