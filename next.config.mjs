@@ -16,10 +16,9 @@ const nextConfig = {
   // Transpile packages that need it
   transpilePackages: ['three', 'gsap', 'react-icons'],
   
-  // Server compilation options
-  experimental: {
-    serverComponentsExternalPackages: ['three', 'react-icons']
-  },
+  // External packages for server components - don't overlap with transpilePackages
+  // The packages can't be in both arrays according to the error message
+  serverExternalPackages: [],
   
   // Webpack configuration
   webpack: (config) => {
