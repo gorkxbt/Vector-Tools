@@ -1,8 +1,13 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { FaCaretUp, FaCaretDown, FaInfoCircle, FaWallet, FaSpinner } from 'react-icons/fa'
+import React from 'react'
+import { useState, useEffect } from 'react'
+import { FaCaretUp, FaCaretDown, FaInfoCircle, FaWallet, FaSpinner, FaExclamationTriangle, FaSyncAlt } from 'react-icons/fa'
 import { motion } from 'framer-motion'
+import { useWallet } from '@/hooks/useWallet'
+import { TokenInfo } from '@/types/tokens'
+import { formatWalletAddress } from '@/utils/wallet'
+import { getSolanaPrice } from '@/services/api'
 
 // Phantom wallet interface
 type PhantomWindow = Window & {

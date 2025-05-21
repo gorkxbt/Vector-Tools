@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useState } from 'react'
 import { FaTwitter, FaTelegram, FaSearch, FaFilter, FaEllipsisV } from 'react-icons/fa'
 
