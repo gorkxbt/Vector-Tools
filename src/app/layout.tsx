@@ -1,10 +1,15 @@
 import React from 'react'
 import './globals.css'
-import { Inter } from 'next/font/google'
+import { Outfit } from 'next/font/google'
 import type { Metadata } from 'next'
 import ParticleBackground from '@/components/ParticleBackground'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
+const outfit = Outfit({ 
+  subsets: ['latin'],
+  variable: '--font-outfit',
+  display: 'swap',
+  weight: ['300', '400', '500', '600', '700']
+})
 
 export const metadata: Metadata = {
   title: 'Vector Tools - AI-Powered Solana Trading Dashboard',
@@ -17,9 +22,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body style={{ 
-        fontFamily: inter.variable, 
+    <html lang="en" className={outfit.variable}>
+      <body className={outfit.className} style={{ 
         minHeight: '100vh', 
         overflowX: 'hidden',
         margin: 0, 
