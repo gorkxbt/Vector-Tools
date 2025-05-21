@@ -2,7 +2,13 @@ import React from 'react'
 import './globals.css'
 import { Outfit } from 'next/font/google'
 import type { Metadata } from 'next'
-import ParticleBackground from '@/components/ParticleBackground'
+import dynamic from 'next/dynamic'
+
+// Use dynamic import for the 3D components to avoid SSR issues
+const TradingBackground = dynamic(
+  () => import('@/components/3D/TradingBackground'),
+  { ssr: false }
+)
 
 const outfit = Outfit({ 
   subsets: ['latin'],
@@ -29,7 +35,7 @@ export default function RootLayout({
         margin: 0, 
         padding: 0 
       }}>
-        <ParticleBackground />
+        <TradingBackground />
         <div style={{ maxWidth: '100vw', overflowX: 'hidden', position: 'relative' }}>
           {children}
         </div>
