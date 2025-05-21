@@ -1,12 +1,69 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
 import NewPairsTable from '@/components/dashboard/NewPairsTable'
+import StatsCard from '@/components/dashboard/StatsCard'
+import SocialLink from '@/components/dashboard/SocialLink'
 import { motion } from 'framer-motion'
 import { FaRocket, FaTwitter, FaDiscord, FaGlobe } from 'react-icons/fa'
+import { usePumpFun } from '@/hooks/usePumpFun'
+import { formatCurrency, formatPercent } from '@/utils/formatters'
 
 const NewPairsPage = () => {
+  const { pairs, filteredPairs, isLoading, refresh } = usePumpFun();
+  const [stats, setStats] = useState({
+    newPairsCount: 0,
+    totalVolume: 0,
+    topGainer: { symbol: 'N/A', priceChange: 0 },
+    highestLiquidity: { symbol: 'N/A', poolSize: 0, pairWithSymbol: 'USDC' }
+  });
+  
+  // Force refresh data when component loads
+  useEffect(() => {
+    // Refresh data on initial load
+    refresh();
+    
+    // Set up a refresh interval (every 30 seconds)
+    const intervalId = setInterval(() => {
+      refresh();
+    }, 30000);
+    
+    // Clean up interval on unmount
+    return () => clearInterval(intervalId);
+  }, [refresh]);
+
+  // Calculate dashboard stats from real data
+  useEffect(() => {
+    if (pairs && pairs.length > 0) {
+      // Count pairs created in last 24 hours
+      const oneDayAgo = new Date();
+      oneDayAgo.setHours(oneDayAgo.getHours() - 24);
+      const newPairsCount = pairs.filter(pair => 
+        new Date(pair.createdAt) > oneDayAgo
+      ).length;
+      
+      // Calculate total volume
+      const totalVolume = pairs.reduce((sum, pair) => sum + (pair.volume24h || 0), 0);
+      
+      // Find top gainer
+      const sortedByGain = [...pairs].sort((a, b) => (b.priceChange || 0) - (a.priceChange || 0));
+      const topGainer = sortedByGain.length > 0 ? sortedByGain[0] : { symbol: 'N/A', priceChange: 0 };
+      
+      // Find highest liquidity
+      const sortedByLiquidity = [...pairs].sort((a, b) => (b.poolSize || 0) - (a.poolSize || 0));
+      const highestLiquidity = sortedByLiquidity.length > 0 ? sortedByLiquidity[0] : 
+        { symbol: 'N/A', poolSize: 0, pairWithSymbol: 'USDC' };
+      
+      setStats({
+        newPairsCount,
+        totalVolume,
+        topGainer,
+        highestLiquidity
+      });
+    }
+  }, [pairs]);
+
   return (
     <DashboardLayout>
       <motion.div
@@ -26,65 +83,29 @@ const NewPairsPage = () => {
           </div>
           
           <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <a 
+            <SocialLink 
               href="https://pump.fun/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '0.5rem 0.75rem',
-                backgroundColor: 'rgba(255, 32, 32, 0.1)',
-                color: '#FF2020',
-                borderRadius: '0.5rem',
-                textDecoration: 'none',
-                fontSize: '0.875rem',
-                fontWeight: '500'
-              }}
-            >
-              <FaGlobe style={{ marginRight: '0.375rem' }} />
-              PumpFun
-            </a>
+              icon={<FaGlobe />}
+              label="PumpFun"
+              bgColor="rgba(255, 32, 32, 0.1)"
+              textColor="#FF2020"
+            />
             
-            <a 
+            <SocialLink 
               href="https://twitter.com/PumpDotFun" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '0.5rem 0.75rem',
-                backgroundColor: 'rgba(29, 161, 242, 0.1)',
-                color: '#1DA1F2',
-                borderRadius: '0.5rem',
-                textDecoration: 'none',
-                fontSize: '0.875rem',
-                fontWeight: '500'
-              }}
-            >
-              <FaTwitter style={{ marginRight: '0.375rem' }} />
-              Twitter
-            </a>
+              icon={<FaTwitter />}
+              label="Twitter"
+              bgColor="rgba(29, 161, 242, 0.1)"
+              textColor="#1DA1F2"
+            />
             
-            <a 
+            <SocialLink 
               href="https://discord.gg/pump-fun" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '0.5rem 0.75rem',
-                backgroundColor: 'rgba(88, 101, 242, 0.1)',
-                color: '#5865F2',
-                borderRadius: '0.5rem',
-                textDecoration: 'none',
-                fontSize: '0.875rem',
-                fontWeight: '500'
-              }}
-            >
-              <FaDiscord style={{ marginRight: '0.375rem' }} />
-              Discord
-            </a>
+              icon={<FaDiscord />}
+              label="Discord"
+              bgColor="rgba(88, 101, 242, 0.1)"
+              textColor="#5865F2"
+            />
           </div>
         </div>
         
@@ -95,73 +116,33 @@ const NewPairsPage = () => {
           gap: '1rem',
           marginBottom: '2rem' 
         }}>
-          <motion.div 
-            whileHover={{ y: -5, transition: { duration: 0.2 } }}
-            style={{ 
-              padding: '1.25rem',
-              backgroundColor: 'rgba(255, 255, 255, 0.7)',
-              backdropFilter: 'blur(8px)',
-              borderRadius: '0.75rem',
-              border: '1px solid #f3f4f6'
-            }}
-          >
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>New Pairs (24h)</div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 'bold' }}>142</div>
-            <div style={{ fontSize: '0.875rem', color: '#10b981', display: 'flex', alignItems: 'center', marginTop: '0.25rem' }}>
-              +23% vs previous day
-            </div>
-          </motion.div>
+          <StatsCard
+            title="New Pairs (24h)"
+            value={stats.newPairsCount}
+            subtitle={pairs && pairs.length > 0 ? `${pairs.length} total pairs tracked` : 'Loading data...'}
+            loading={isLoading}
+          />
           
-          <motion.div 
-            whileHover={{ y: -5, transition: { duration: 0.2 } }}
-            style={{ 
-              padding: '1.25rem',
-              backgroundColor: 'rgba(255, 255, 255, 0.7)',
-              backdropFilter: 'blur(8px)',
-              borderRadius: '0.75rem',
-              border: '1px solid #f3f4f6'
-            }}
-          >
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Trading Volume</div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 'bold' }}>$14.2M</div>
-            <div style={{ fontSize: '0.875rem', color: '#10b981', display: 'flex', alignItems: 'center', marginTop: '0.25rem' }}>
-              +8.2% vs previous day
-            </div>
-          </motion.div>
+          <StatsCard
+            title="Trading Volume"
+            value={formatCurrency(stats.totalVolume)}
+            subtitle="Based on 24h volume data"
+            loading={isLoading}
+          />
           
-          <motion.div 
-            whileHover={{ y: -5, transition: { duration: 0.2 } }}
-            style={{ 
-              padding: '1.25rem',
-              backgroundColor: 'rgba(255, 255, 255, 0.7)',
-              backdropFilter: 'blur(8px)',
-              borderRadius: '0.75rem',
-              border: '1px solid #f3f4f6'
-            }}
-          >
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Top Gainer (24h)</div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 'bold' }}>MOONX</div>
-            <div style={{ fontSize: '0.875rem', color: '#10b981', display: 'flex', alignItems: 'center', marginTop: '0.25rem' }}>
-              +428% in 6 hours
-            </div>
-          </motion.div>
+          <StatsCard
+            title="Top Gainer (24h)"
+            value={stats.topGainer.symbol}
+            subtitle={isLoading ? 'Loading...' : `+${stats.topGainer.priceChange?.toFixed(2) || 0}%`}
+            loading={isLoading}
+          />
           
-          <motion.div 
-            whileHover={{ y: -5, transition: { duration: 0.2 } }}
-            style={{ 
-              padding: '1.25rem',
-              backgroundColor: 'rgba(255, 255, 255, 0.7)',
-              backdropFilter: 'blur(8px)',
-              borderRadius: '0.75rem',
-              border: '1px solid #f3f4f6'
-            }}
-          >
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Highest Liquidity</div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 'bold' }}>$1.2M</div>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', display: 'flex', alignItems: 'center', marginTop: '0.25rem' }}>
-              KING/USDC pair
-            </div>
-          </motion.div>
+          <StatsCard
+            title="Highest Liquidity"
+            value={formatCurrency(stats.highestLiquidity.poolSize)}
+            subtitle={isLoading ? 'Loading...' : `${stats.highestLiquidity.symbol}/${stats.highestLiquidity.pairWithSymbol} pair`}
+            loading={isLoading}
+          />
         </div>
         
         {/* New Pairs Table */}

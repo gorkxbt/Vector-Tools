@@ -17,26 +17,32 @@ const Navbar = () => {
     setMounted(true)
     
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true)
-      } else {
-        setIsScrolled(false)
+      if (typeof window !== 'undefined') {
+        if (window.scrollY > 10) {
+          setIsScrolled(true)
+        } else {
+          setIsScrolled(false)
+        }
       }
     }
 
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768)
+      if (typeof window !== 'undefined') {
+        setIsMobile(window.innerWidth < 768)
+      }
     }
 
     // Initialize mobile state
     handleResize()
 
-    window.addEventListener('scroll', handleScroll)
-    window.addEventListener('resize', handleResize)
-    
-    return () => {
-      window.removeEventListener('scroll', handleScroll)
-      window.removeEventListener('resize', handleResize)
+    if (typeof window !== 'undefined') {
+      window.addEventListener('scroll', handleScroll)
+      window.addEventListener('resize', handleResize)
+      
+      return () => {
+        window.removeEventListener('scroll', handleScroll)
+        window.removeEventListener('resize', handleResize)
+      }
     }
   }, [])
 

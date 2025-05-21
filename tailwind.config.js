@@ -20,24 +20,14 @@ module.exports = {
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
       borderRadius: {
-        'xl': '0.75rem',
+        xl: '0.75rem',
         '2xl': '1rem',
+        '3xl': '1.5rem',
       },
     },
   },
-  safelist: [
-    // Colors that were causing errors
-    'text-white',
-    'text-green-500',
-    'text-red-500',
-    'bg-green-100',
-    'bg-yellow-100',
-    'bg-red-100',
-    'text-green-800',
-    'text-yellow-800',
-    'text-red-800',
-    'rounded-xl',
-    'rounded-full'
-  ],
+  // Don't use safelist for JIT mode, as it can cause conflicts
+  // Instead use explicit classes and inline styles
+  safelist: [],
   plugins: [],
 } 

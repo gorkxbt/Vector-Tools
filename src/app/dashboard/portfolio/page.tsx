@@ -2,10 +2,10 @@
 
 import React from 'react'
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
-import { FaChartLine, FaInfoCircle } from 'react-icons/fa'
+import { FaWallet, FaInfoCircle } from 'react-icons/fa'
 import { motion } from 'framer-motion'
 
-const AnalyticsPage = () => {
+const PortfolioPage = () => {
   return (
     <DashboardLayout>
       <motion.div
@@ -16,11 +16,11 @@ const AnalyticsPage = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div>
             <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem', display: 'flex', alignItems: 'center' }}>
-              <FaChartLine style={{ color: '#FF2020', marginRight: '0.5rem' }} />
-              Market Analytics
+              <FaWallet style={{ color: '#FF2020', marginRight: '0.5rem' }} />
+              Portfolio
             </h1>
             <p style={{ color: '#6b7280' }}>
-              Track market trends, volume, and metrics across the Solana ecosystem
+              Track your Solana tokens, transactions, and portfolio performance
             </p>
           </div>
         </div>
@@ -34,9 +34,9 @@ const AnalyticsPage = () => {
           border: '1px solid #f3f4f6'
         }}>
           <FaInfoCircle style={{ fontSize: '3rem', color: '#FF2020', marginBottom: '1.5rem' }} />
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>Analytics Module Coming Soon</h2>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>Connect Wallet to View Portfolio</h2>
           <p style={{ fontSize: '1.125rem', maxWidth: '500px', margin: '0 auto 2rem' }}>
-            We're currently developing advanced analytics tools to provide detailed market insights and trend analysis.
+            Connect your Phantom wallet to track your tokens, transactions, and portfolio performance in real-time.
           </p>
         </div>
       </motion.div>
@@ -44,4 +44,4 @@ const AnalyticsPage = () => {
   )
 }
 
-export default AnalyticsPage 
+export default PortfolioPage 

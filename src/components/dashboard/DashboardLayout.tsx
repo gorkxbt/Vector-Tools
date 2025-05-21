@@ -308,6 +308,7 @@ const DashboardLayout = ({ children }: Props) => {
                 <li key={item.path}>
                   <Link
                     href={item.path}
+                    onClick={() => setIsOpen(false)}
                     style={{
                       display: 'flex', 
                       alignItems: 'center', 

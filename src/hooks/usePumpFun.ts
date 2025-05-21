@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getNewPumpFunPairs } from '@/services/api';
 import { NewPairData } from '@/types/market';
 
@@ -40,15 +40,23 @@ export function usePumpFun(): PumpFunData {
     field: 'createdAt',
     order: 'desc'
   });
+  
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch data on mount and set up refresh interval
   useEffect(() => {
+    // Immediately fetch data on mount
     fetchPairsData();
     
-    // Set up interval to refresh data every 30 seconds
-    const intervalId = setInterval(fetchPairsData, 30000);
+    // Set up interval to refresh data every 15 seconds for real-time updates
+    intervalRef.current = setInterval(fetchPairsData, 15000);
     
-    return () => clearInterval(intervalId);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, []);
 
   // Apply filters and sorting when pairs or filter/sort settings change
@@ -63,9 +71,16 @@ export function usePumpFun(): PumpFunData {
     try {
       setIsLoading(true);
       const newPairs = await getNewPumpFunPairs();
-      setPairs(newPairs);
-      setLastUpdated(new Date());
-      setError(null);
+      
+      // Ensure we're getting real data, not empty arrays or mock data
+      if (Array.isArray(newPairs) && newPairs.length > 0) {
+        setPairs(newPairs);
+        setLastUpdated(new Date());
+        setError(null);
+      } else {
+        setError('API returned no token pairs or invalid data');
+        console.error('Invalid data from API:', newPairs);
+      }
     } catch (err) {
       setError('Failed to fetch token pairs');
       console.error('Error fetching PumpFun pairs:', err);
@@ -110,8 +125,8 @@ export function usePumpFun(): PumpFunData {
     
     // Apply sorting
     result.sort((a, b) => {
-      const fieldA = a[sortConfig.field];
-      const fieldB = b[sortConfig.field];
+      const fieldA = a[sortConfig.field as keyof NewPairData];
+      const fieldB = b[sortConfig.field as keyof NewPairData];
       
       // Handle special case for dates
       if (sortConfig.field === 'createdAt') {
@@ -120,8 +135,17 @@ export function usePumpFun(): PumpFunData {
         return sortConfig.order === 'asc' ? dateA - dateB : dateB - dateA;
       }
       
-      if (fieldA < fieldB) return sortConfig.order === 'asc' ? -1 : 1;
-      if (fieldA > fieldB) return sortConfig.order === 'asc' ? 1 : -1;
+      // Handle numeric values
+      if (typeof fieldA === 'number' && typeof fieldB === 'number') {
+        return sortConfig.order === 'asc' ? fieldA - fieldB : fieldB - fieldA;
+      }
+      
+      // Convert to string for other types
+      const strA = String(fieldA || '');
+      const strB = String(fieldB || '');
+      
+      if (strA < strB) return sortConfig.order === 'asc' ? -1 : 1;
+      if (strA > strB) return sortConfig.order === 'asc' ? 1 : -1;
       return 0;
     });
     
@@ -156,7 +180,7 @@ export function usePumpFun(): PumpFunData {
    * Manually refresh data
    */
   const refresh = async () => {
-    await fetchPairsData();
+    return await fetchPairsData();
   };
 
   return {

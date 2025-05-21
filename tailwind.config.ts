@@ -6,6 +6,79 @@ const config: Config = {
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  safelist: [
+    // Colors
+    'text-white', 'text-gray-400', 'text-gray-500', 'text-red-500', 'text-green-500', 'text-blue-500',
+    'text-gray-600', 'text-gray-700', 'text-gray-800', 'text-gray-900',
+    'text-green-600', 'text-green-700', 'text-green-800', 
+    'text-yellow-600', 'text-yellow-700', 'text-yellow-800',
+    'text-red-600', 'text-red-700', 'text-red-800',
+    'text-blue-600', 'text-blue-700', 'text-blue-800',
+    
+    'bg-white', 'bg-gray-50', 'bg-gray-100', 'bg-gray-200', 'bg-gray-300',
+    'bg-red-50', 'bg-red-100', 'bg-red-200', 'bg-red-300', 'bg-red-500', 'bg-red-600', 'bg-red-700',
+    'bg-green-50', 'bg-green-100', 'bg-green-200', 'bg-green-500', 'bg-green-600', 'bg-green-700',
+    'bg-yellow-50', 'bg-yellow-100', 'bg-yellow-200',
+    'bg-blue-50', 'bg-blue-100', 'bg-blue-500', 'bg-blue-600', 'bg-blue-700',
+    
+    'bg-opacity-10', 'bg-opacity-20', 'bg-opacity-50',
+    
+    'bg-gradient-to-br', 'bg-gradient-to-r', 'from-pink-500', 'to-purple-700', 'from-red-500', 'to-red-700',
+    
+    'border-gray-200', 'border-gray-300', 'border-red-200', 'border-red-300',
+    'border-green-200', 'border-green-300', 'border-yellow-200', 'border-yellow-300',
+    'border-blue-200', 'border-blue-300',
+    
+    // Sizing and spacing
+    'p-1', 'p-2', 'p-3', 'p-4', 'p-5', 'p-6', 'p-8', 'p-10',
+    'px-1', 'px-2', 'px-3', 'px-4', 'px-5', 'px-6', 'px-8', 'px-10',
+    'py-1', 'py-2', 'py-3', 'py-4', 'py-5', 'py-6', 'py-8', 'py-10',
+    'pt-1', 'pt-2', 'pt-3', 'pt-4', 'pt-5',
+    'pb-1', 'pb-2', 'pb-3', 'pb-4', 'pb-5',
+    'pl-1', 'pl-2', 'pl-3', 'pl-4', 'pl-5', 'pl-10',
+    'pr-1', 'pr-2', 'pr-3', 'pr-4', 'pr-5',
+    
+    'my-1', 'my-2', 'my-3', 'my-4', 'my-5',
+    'mx-1', 'mx-2', 'mx-3', 'mx-4', 'mx-5', 'mx-auto',
+    'mt-1', 'mt-2', 'mt-3', 'mt-4', 'mt-5',
+    'mb-1', 'mb-2', 'mb-3', 'mb-4', 'mb-5',
+    'ml-1', 'ml-2', 'ml-3', 'ml-4', 'ml-5',
+    'mr-1', 'mr-2', 'mr-3', 'mr-4', 'mr-5',
+    
+    'gap-1', 'gap-2', 'gap-3', 'gap-4', 'gap-5',
+    
+    'h-1', 'h-2', 'h-3', 'h-4', 'h-5', 'h-6', 'h-8', 'h-10', 'h-full',
+    'w-1', 'w-2', 'w-3', 'w-4', 'w-5', 'w-6', 'w-8', 'w-10', 'w-full', 'w-fit',
+    'min-w-full',
+    'max-w-[180px]', 'max-w-full',
+    
+    // Flex
+    'flex', 'flex-row', 'flex-col', 'inline-flex', 'flex-1', 'flex-grow', 'flex-shrink-0',
+    'justify-start', 'justify-end', 'justify-center', 'justify-between', 'justify-around', 'justify-evenly',
+    'items-start', 'items-end', 'items-center', 'items-baseline', 'items-stretch',
+    
+    // Borders
+    'rounded', 'rounded-sm', 'rounded-md', 'rounded-lg', 'rounded-xl', 'rounded-2xl', 'rounded-full', 
+    'rounded-t', 'rounded-b', 'rounded-l', 'rounded-r',
+    'border', 'border-0', 'border-2', 'border-t', 'border-b', 'border-l', 'border-r',
+    
+    // Typography
+    'text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl',
+    'font-normal', 'font-medium', 'font-semibold', 'font-bold',
+    'uppercase', 'lowercase', 'capitalize', 'normal-case',
+    'truncate', 'text-ellipsis', 'whitespace-nowrap',
+    
+    // Other
+    'shadow', 'shadow-sm', 'shadow-md', 'shadow-lg', 'shadow-xl',
+    'opacity-0', 'opacity-50', 'opacity-100',
+    'animate-spin', 'animate-pulse', 'transition', 'transition-colors', 'duration-200', 'duration-300',
+    'hover:bg-red-700', 'hover:bg-blue-700', 'hover:bg-gray-50', 'hover:bg-gray-300',
+    'focus:ring', 'focus:ring-red-200', 'focus:border-red-300',
+    'overflow-x-auto', 'overflow-y-auto', 'relative', 'absolute',
+    'top-3', 'left-3', 'right-3', 'bottom-3',
+    'cursor-pointer', 'ring', 'whitespace-nowrap',
+    'divide-y', 'divide-gray-200',
+  ],
   theme: {
     extend: {
       colors: {

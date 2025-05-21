@@ -24,6 +24,9 @@ import {
   FaSearch
 } from 'react-icons/fa'
 
+// Import formatters
+import { formatCurrency, formatTimeAgo, formatPercent, formatNumber, formatPrice } from '@/utils/formatters'
+
 // Sorting options
 export type SortOption = 'newest' | 'poolSize' | 'priceChange' | 'volume';
 
@@ -35,35 +38,32 @@ export interface FilterOptions {
   verified?: boolean;
 }
 
-// Time ago formatter
-const formatTimeAgo = (timestamp: string): string => {
-  const now = new Date()
-  const date = new Date(timestamp)
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-  
-  if (seconds < 60) return `${seconds} seconds ago`
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`
-  return `${Math.floor(seconds / 86400)} days ago`
-}
-
 // Price change formatter with color
-const PriceChange = ({ value }: { value: number }) => (
-  <div style={{ 
-    display: 'flex', 
-    alignItems: 'center', 
-    justifyContent: 'flex-end', 
-    color: value >= 0 ? '#10b981' : '#ef4444',
-    fontWeight: '500'
-  }}>
-    {value >= 0 ? (
-      <FaArrowUp style={{ marginRight: '0.25rem', fontSize: '0.75rem' }} />
-    ) : (
-      <FaArrowDown style={{ marginRight: '0.25rem', fontSize: '0.75rem' }} />
-    )}
-    {Math.abs(value).toFixed(2)}%
-  </div>
-)
+const PriceChange = ({ value }: { value: number }) => {
+  const formattedValue = value ? Math.abs(value).toFixed(2) : '0.00';
+  const isPositive = value >= 0;
+  
+  return (
+    <div style={{ 
+      display: 'flex', 
+      alignItems: 'center',
+      padding: '0.25rem 0.5rem',
+      borderRadius: '0.25rem',
+      backgroundColor: isPositive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+      color: isPositive ? '#10b981' : '#ef4444',
+      fontWeight: '500',
+      fontSize: '0.875rem',
+      width: 'fit-content'
+    }}>
+      {isPositive ? (
+        <FaArrowUp style={{ marginRight: '0.25rem', fontSize: '0.75rem' }} />
+      ) : (
+        <FaArrowDown style={{ marginRight: '0.25rem', fontSize: '0.75rem' }} />
+      )}
+      {formattedValue}%
+    </div>
+  );
+}
 
 // Verification badge
 const VerificationBadge = ({ verified }: { verified: boolean }) => (
@@ -89,6 +89,59 @@ interface NewPairsTableProps {
   showFilters?: boolean;
   onSelect?: (pair: NewPairData) => void;
 }
+
+// Add RiskBadge component
+// Risk badge component
+const RiskBadge = ({ risk }: { risk?: string }) => {
+  if (!risk) return null;
+  
+  let color, icon, label;
+  
+  if (risk === 'LOW') {
+    color = 'bg-green-100 text-green-800 border border-green-200';
+    icon = <FaCheckCircle className="mr-1 text-green-600" size={12} />;
+    label = 'Low';
+  } else if (risk === 'MEDIUM') {
+    color = 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+    icon = <FaExclamationTriangle className="mr-1 text-yellow-600" size={12} />;
+    label = 'Medium';
+  } else if (risk === 'HIGH') {
+    color = 'bg-red-100 text-red-800 border border-red-200';
+    icon = <FaTimesCircle className="mr-1 text-red-600" size={12} />;
+    label = 'High';
+  } else {
+    color = 'bg-gray-100 text-gray-800 border border-gray-200';
+    icon = null;
+    label = risk;
+  }
+  
+  return (
+    <span style={{
+      padding: '0.5rem 1rem',
+      borderRadius: '0.375rem',
+      fontSize: '0.75rem',
+      fontWeight: '500',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: 'fit-content',
+      backgroundColor: risk === 'LOW' ? 'rgba(16, 185, 129, 0.1)' : 
+                     risk === 'MEDIUM' ? 'rgba(245, 158, 11, 0.1)' : 
+                     risk === 'HIGH' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(107, 114, 128, 0.1)',
+      color: risk === 'LOW' ? '#10b981' : 
+             risk === 'MEDIUM' ? '#f59e0b' : 
+             risk === 'HIGH' ? '#ef4444' : '#6b7280',
+      borderWidth: '1px',
+      borderStyle: 'solid',
+      borderColor: risk === 'LOW' ? 'rgba(16, 185, 129, 0.2)' : 
+                   risk === 'MEDIUM' ? 'rgba(245, 158, 11, 0.2)' : 
+                   risk === 'HIGH' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(107, 114, 128, 0.2)',
+    }}>
+      {icon}
+      {label} Risk
+    </span>
+  );
+};
 
 const NewPairsTable = ({ limit, showFilters = true, onSelect }: NewPairsTableProps) => {
   // Use the PumpFun hook to get real data
@@ -157,47 +210,6 @@ const NewPairsTable = ({ limit, showFilters = true, onSelect }: NewPairsTablePro
     clearFilters();
   };
 
-  // Format date relative to now
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    
-    if (diffMins < 60) {
-      return `${diffMins}m ago`;
-    } else if (diffMins < 1440) {
-      return `${Math.floor(diffMins / 60)}h ago`;
-    } else {
-      return `${Math.floor(diffMins / 1440)}d ago`;
-    }
-  };
-
-  // Format number with appropriate suffix
-  const formatNumber = (num: number, decimals = 2) => {
-    if (num === null || num === undefined) return 'N/A';
-    
-    if (num >= 1000000) {
-      return `$${(num / 1000000).toFixed(decimals)}M`;
-    } else if (num >= 1000) {
-      return `$${(num / 1000).toFixed(decimals)}K`;
-    } else {
-      return `$${num.toFixed(decimals)}`;
-    }
-  };
-
-  // Format percent change
-  const formatPercent = (value: number) => {
-    if (value === null || value === undefined) return 'N/A';
-    
-    const isPositive = value >= 0;
-    return (
-      <span className={isPositive ? 'text-green-500' : 'text-red-500'}>
-        {isPositive ? '+' : ''}{value.toFixed(2)}%
-      </span>
-    );
-  };
-
   // Handle clicking on a row
   const handleRowClick = (pair: NewPairData) => {
     if (onSelect) {
@@ -205,282 +217,246 @@ const NewPairsTable = ({ limit, showFilters = true, onSelect }: NewPairsTablePro
     }
   };
 
-  // Risk badge component
-  const RiskBadge = ({ risk }: { risk?: string }) => {
-    if (!risk) return null;
-    
-    let color = 'bg-gray-200 text-gray-800';
-    
-    if (risk === 'LOW') {
-      color = 'bg-green-100 text-green-800';
-    } else if (risk === 'MEDIUM') {
-      color = 'bg-yellow-100 text-yellow-800';
-    } else if (risk === 'HIGH') {
-      color = 'bg-red-100 text-red-800';
-    }
-    
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs ${color}`}>
-        {risk}
-      </span>
-    );
-  };
-
   // Display pairs with limit if specified
   const displayPairs = limit ? filteredPairs.slice(0, limit) : filteredPairs;
 
   return (
-    <div className="w-full">
+    <div style={{ width: '100%' }}>
       {/* Filters section */}
       {showFilters && (
-        <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <div className="flex flex-col md:flex-row gap-4 mb-4">
-            <div className="flex-1">
-              <div className="relative">
+        <div style={{ 
+          marginBottom: '1rem', 
+          padding: '1rem', 
+          backgroundColor: '#f9fafb', 
+          borderRadius: '0.5rem', 
+          border: '1px solid #e5e7eb' 
+        }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '1rem', 
+            marginBottom: '1rem' 
+          }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ position: 'relative' }}>
                 <input
                   type="text"
                   placeholder="Search by name, symbol or address..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full p-2 pl-10 rounded border border-gray-300 focus:border-red-300 focus:ring focus:ring-red-200"
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    paddingLeft: '2.5rem',
+                    borderRadius: '0.25rem',
+                    border: '1px solid #d1d5db',
+                    outline: 'none'
+                  }}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
-                <FaSearch className="absolute left-3 top-3 text-gray-400" />
+                <FaSearch style={{ position: 'absolute', left: '0.75rem', top: '0.75rem', color: '#9ca3af' }} />
               </div>
             </div>
             
-            <div className="flex gap-2">
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button
                 onClick={handleSearch}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#f3f4f6',
+                  borderRadius: '0.25rem',
+                  border: '1px solid #d1d5db',
+                  fontWeight: '500',
+                  color: '#374151'
+                }}
               >
+                <FaSearch size={12} />
                 Search
               </button>
+              
               <button
                 onClick={resetFilters}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#f3f4f6',
+                  borderRadius: '0.25rem',
+                  border: '1px solid #d1d5db',
+                  fontWeight: '500',
+                  color: '#374151'
+                }}
               >
-                Reset
+                Clear Filters
               </button>
+              
               <button
                 onClick={refresh}
-                className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition flex items-center"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#FF2020',
+                  borderRadius: '0.25rem',
+                  border: 'none',
+                  fontWeight: '500',
+                  color: 'white'
+                }}
+                title={`Last updated: ${new Date(lastUpdated).toLocaleTimeString()}`}
               >
-                <FaSyncAlt className="mr-1" /> Refresh
+                <FaSyncAlt className={isLoading ? 'animate-spin' : ''} size={12} />
+                Refresh
               </button>
             </div>
           </div>
-          
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="w-full md:w-1/3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Verification</label>
-              <select
-                value={filterVerified === undefined ? '' : filterVerified ? 'verified' : 'unverified'}
-                onChange={(e) => {
-                  if (e.target.value === 'verified') setFilterVerified(true);
-                  else if (e.target.value === 'unverified') setFilterVerified(false);
-                  else setFilterVerified(undefined);
-                }}
-                className="w-full p-2 rounded border border-gray-300 focus:border-red-300 focus:ring focus:ring-red-200"
-              >
-                <option value="">All tokens</option>
-                <option value="verified">Verified only</option>
-                <option value="unverified">Unverified only</option>
-              </select>
-            </div>
-            
-            <div className="w-full md:w-1/3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Min. Pool Size</label>
-              <select
-                value={minPoolSize || ''}
-                onChange={(e) => setMinPoolSize(e.target.value ? Number(e.target.value) : undefined)}
-                className="w-full p-2 rounded border border-gray-300 focus:border-red-300 focus:ring focus:ring-red-200"
-              >
-                <option value="">Any size</option>
-                <option value="1000">$1,000+</option>
-                <option value="10000">$10,000+</option>
-                <option value="50000">$50,000+</option>
-                <option value="100000">$100,000+</option>
-              </select>
-            </div>
-            
-            <div className="w-full md:w-1/3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Risk Level</label>
-              <select
-                value={riskLevel || ''}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setRiskLevel(val ? val as 'LOW' | 'MEDIUM' | 'HIGH' : null);
-                }}
-                className="w-full p-2 rounded border border-gray-300 focus:border-red-300 focus:ring focus:ring-red-200"
-              >
-                <option value="">Any risk</option>
-                <option value="LOW">Low risk</option>
-                <option value="MEDIUM">Medium risk</option>
-                <option value="HIGH">High risk</option>
-              </select>
-            </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div style={{ 
+        width: '100%', 
+        overflowX: 'auto', 
+        backgroundColor: 'white', 
+        borderRadius: '0.75rem', 
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' 
+      }}>
+        {isLoading ? (
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            padding: '2rem', 
+            color: '#6b7280' 
+          }}>
+            <FaSpinner style={{ animation: 'spin 1s linear infinite', marginRight: '0.5rem' }} />
+            Loading pairs...
           </div>
-          
-          <div className="flex justify-end mt-4">
-            <button
-              onClick={applyFilters}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition flex items-center"
-            >
-              <FaFilter className="mr-2" /> Apply Filters
-            </button>
+        ) : error ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '2rem', 
+            color: '#ef4444' 
+          }}>
+            <FaTimesCircle style={{ marginBottom: '0.5rem', margin: '0 auto' }} />
+            <p>{error}</p>
           </div>
-        </div>
-      )}
-      
-      {/* Last updated info */}
-      {lastUpdated && (
-        <div className="text-right text-sm text-gray-500 mb-2">
-          Last updated: {lastUpdated.toLocaleTimeString()}
-        </div>
-      )}
-      
-      {/* Error message */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded mb-4">
-          {error}
-        </div>
-      )}
-      
-      {/* Loading state */}
-      {isLoading && (
-        <div className="text-center p-10">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-600 mb-2"></div>
-          <p className="text-gray-600">Loading token pairs...</p>
-        </div>
-      )}
-      
-      {/* Results table */}
-      {!isLoading && (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
-            <thead className="bg-gray-50">
-              <tr>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+        ) : displayPairs.length === 0 ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '2rem', 
+            color: '#6b7280' 
+          }}>
+            <p>No pairs found matching your criteria</p>
+          </div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ 
+                borderBottom: '1px solid #e5e7eb', 
+                backgroundColor: '#f9fafb', 
+                fontWeight: 600 
+              }}>
+                <th
+                  style={{ padding: '0.75rem', textAlign: 'left', cursor: 'pointer' }}
                   onClick={() => handleSort('createdAt')}
                 >
-                  <div className="flex items-center">
-                    Created {getSortIcon('createdAt')}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    Age {getSortIcon('createdAt')}
                   </div>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center">
-                    Token
-                  </div>
-                </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                <th style={{ padding: '0.75rem', textAlign: 'left' }}>Token</th>
+                <th
+                  style={{ padding: '0.75rem', textAlign: 'right', cursor: 'pointer' }}
                   onClick={() => handleSort('currentPrice')}
                 >
-                  <div className="flex items-center">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.25rem' }}>
                     Price {getSortIcon('currentPrice')}
                   </div>
                 </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                <th
+                  style={{ padding: '0.75rem', textAlign: 'right', cursor: 'pointer' }}
                   onClick={() => handleSort('priceChange')}
                 >
-                  <div className="flex items-center">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.25rem' }}>
                     Change {getSortIcon('priceChange')}
                   </div>
                 </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                <th
+                  style={{ padding: '0.75rem', textAlign: 'right', cursor: 'pointer' }}
                   onClick={() => handleSort('poolSize')}
                 >
-                  <div className="flex items-center">
-                    Liquidity {getSortIcon('poolSize')}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.25rem' }}>
+                    Pool Size {getSortIcon('poolSize')}
                   </div>
                 </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('volume24h')}
-                >
-                  <div className="flex items-center">
-                    Volume 24h {getSortIcon('volume24h')}
-                  </div>
-                </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('holders')}
-                >
-                  <div className="flex items-center">
-                    Holders {getSortIcon('holders')}
-                  </div>
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
+                <th style={{ padding: '0.75rem', textAlign: 'center' }}>Risk</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {displayPairs.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="p-4 text-center text-gray-500">
-                    No token pairs found. Try adjusting your filters.
+            <tbody>
+              {displayPairs.map((pair, index) => (
+                <tr 
+                  key={pair.address}
+                  style={{
+                    borderBottom: index < displayPairs.length - 1 ? '1px solid #e5e7eb' : 'none',
+                    cursor: onSelect ? 'pointer' : 'default',
+                    transition: 'background-color 0.1s',
+                    backgroundColor: index % 2 === 0 ? 'white' : '#f9fafb'
+                  }}
+                  onMouseOver={(e) => {e.currentTarget.style.backgroundColor = '#f3f4f6'}}
+                  onMouseOut={(e) => {e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'white' : '#f9fafb'}}
+                  onClick={() => handleRowClick(pair)}
+                >
+                  <td style={{ padding: '1rem 0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <FaClock style={{ color: '#6b7280', fontSize: '0.875rem' }} />
+                      <span>{formatTimeAgo(pair.createdAt)}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '1rem 0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          {pair.name.substring(0, 24)}{pair.name.length > 24 ? '...' : ''} 
+                          <VerificationBadge verified={pair.verified} />
+                        </span>
+                        <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                          {pair.symbol}/{pair.pairWithSymbol}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                  <td style={{ padding: '1rem 0.75rem', textAlign: 'right' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                      <span style={{ fontWeight: '600' }}>{formatPrice(pair.currentPrice)}</span>
+                      <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                        Initial: {formatPrice(pair.initialPrice)}
+                      </span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '1rem 0.75rem', textAlign: 'right' }}>
+                    <PriceChange value={pair.priceChange} />
+                  </td>
+                  <td style={{ padding: '1rem 0.75rem', textAlign: 'right' }}>
+                    {formatCurrency(pair.poolSize)}
+                  </td>
+                  <td style={{ padding: '1rem 0.75rem', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <RiskBadge risk={pair.rugPullRisk} />
+                    </div>
                   </td>
                 </tr>
-              ) : (
-                displayPairs.map((pair) => (
-                  <tr 
-                    key={pair.address} 
-                    className="hover:bg-gray-50 cursor-pointer transition-colors"
-                    onClick={() => handleRowClick(pair)}
-                  >
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{formatDate(pair.createdAt)}</div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="mr-2 flex-shrink-0 h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
-                          {pair.symbol.charAt(0)}
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {pair.symbol}
-                            {pair.verified && (
-                              <FaCheck className="inline-block ml-1 text-green-500" size={12} />
-                            )}
-                          </div>
-                          <div className="text-xs text-gray-500">{pair.name}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{formatNumber(pair.currentPrice, 8)}</div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm">{formatPercent(pair.priceChange)}</div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{formatNumber(pair.poolSize)}</div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{formatNumber(pair.volume24h)}</div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{pair.holders.toLocaleString()}</div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        <RiskBadge risk={pair.rugPullRisk} />
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
+      </div>
     </div>
-  );
-};
+  )
+}
 
-export default NewPairsTable; 
+export default NewPairsTable 
