@@ -307,7 +307,7 @@ const NewPairsTable = ({ limit, showFilters = true, onSelect }: NewPairsTablePro
                   fontWeight: '500',
                   color: 'white'
                 }}
-                title={`Last updated: ${new Date(lastUpdated).toLocaleTimeString()}`}
+                title={lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : 'Never updated'}
               >
                 <FaSyncAlt className={isLoading ? 'animate-spin' : ''} size={12} />
                 Refresh
