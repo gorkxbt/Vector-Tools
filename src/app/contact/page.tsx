@@ -1,12 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import React from 'react'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { FaTwitter, FaTelegram, FaDiscord, FaEnvelope, FaMapMarkerAlt, FaClock } from 'react-icons/fa'
 
-export default function ContactPage() {
-  const [formData, setFormData] = useState({
+interface FormData {
+  name: string;
+  email: string;
+  message: string;
+}
+
+const ContactPage: React.FC = () => {
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
     message: ''
@@ -17,6 +24,8 @@ export default function ContactPage() {
   const [isMobile, setIsMobile] = useState(true)
   
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
@@ -36,7 +45,7 @@ export default function ContactPage() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
     
@@ -52,6 +61,33 @@ export default function ContactPage() {
       }, 5000)
     }, 1500)
   }
+
+  const socialLinks = [
+    { icon: FaTwitter, href: '#', label: 'Twitter' },
+    { icon: FaTelegram, href: '#', label: 'Telegram' },
+    { icon: FaDiscord, href: '#', label: 'Discord' }
+  ];
+  
+  const contactInfo = [
+    { 
+      icon: FaEnvelope, 
+      title: 'Email', 
+      value: 'support@vectortools.io',
+      note: 'We typically respond within 24 hours.'
+    },
+    { 
+      icon: FaMapMarkerAlt, 
+      title: 'Location', 
+      value: 'Global & Remote',
+      note: 'We operate fully online. Our team is distributed worldwide.'
+    },
+    { 
+      icon: FaClock, 
+      title: 'Operating Hours', 
+      value: '24/7 Support',
+      note: 'Our systems run 24/7, just like the blockchain.'
+    }
+  ];
   
   return (
     <>
@@ -200,56 +236,27 @@ export default function ContactPage() {
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>Contact Information</h2>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-                    <div style={{ 
-                      backgroundColor: 'rgba(255, 32, 32, 0.1)', 
-                      padding: '0.75rem', 
-                      borderRadius: '9999px', 
-                      color: '#FF2020', 
-                      marginRight: '1rem' 
-                    }}>
-                      <FaEnvelope />
-                    </div>
-                    <div>
-                      <h3 style={{ fontWeight: '500', marginBottom: '0.25rem' }}>Email</h3>
-                      <p style={{ color: '#4b5563' }}>support@vectortools.io</p>
-                      <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>We typically respond within 24 hours.</p>
-                    </div>
-                  </div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-                    <div style={{ 
-                      backgroundColor: 'rgba(255, 32, 32, 0.1)', 
-                      padding: '0.75rem', 
-                      borderRadius: '9999px', 
-                      color: '#FF2020', 
-                      marginRight: '1rem' 
-                    }}>
-                      <FaMapMarkerAlt />
-                    </div>
-                    <div>
-                      <h3 style={{ fontWeight: '500', marginBottom: '0.25rem' }}>Location</h3>
-                      <p style={{ color: '#4b5563' }}>Global & Remote</p>
-                      <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>We operate fully online. Our team is distributed worldwide.</p>
-                    </div>
-                  </div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-                    <div style={{ 
-                      backgroundColor: 'rgba(255, 32, 32, 0.1)', 
-                      padding: '0.75rem', 
-                      borderRadius: '9999px', 
-                      color: '#FF2020', 
-                      marginRight: '1rem' 
-                    }}>
-                      <FaClock />
-                    </div>
-                    <div>
-                      <h3 style={{ fontWeight: '500', marginBottom: '0.25rem' }}>Operating Hours</h3>
-                      <p style={{ color: '#4b5563' }}>24/7 Support</p>
-                      <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>Our systems run 24/7, just like the blockchain.</p>
-                    </div>
-                  </div>
+                  {contactInfo.map((item, index) => {
+                    const Icon = item.icon;
+                    return (
+                      <div key={index} style={{ display: 'flex', alignItems: 'flex-start' }}>
+                        <div style={{ 
+                          backgroundColor: 'rgba(255, 32, 32, 0.1)', 
+                          padding: '0.75rem', 
+                          borderRadius: '9999px', 
+                          color: '#FF2020', 
+                          marginRight: '1rem' 
+                        }}>
+                          <Icon />
+                        </div>
+                        <div>
+                          <h3 style={{ fontWeight: '500', marginBottom: '0.25rem' }}>{item.title}</h3>
+                          <p style={{ color: '#4b5563' }}>{item.value}</p>
+                          <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>{item.note}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
               
@@ -265,42 +272,32 @@ export default function ContactPage() {
                 </p>
                 
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                  <a href="#" style={{ 
-                    padding: '0.75rem', 
-                    backgroundColor: '#f3f4f6', 
-                    borderRadius: '9999px', 
-                    color: '#4b5563',
-                    display: 'flex',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.color = '#FF2020'}
-                  onMouseOut={(e) => e.currentTarget.style.color = '#4b5563'}>
-                    <FaTwitter size={24} />
-                  </a>
-                  <a href="#" style={{ 
-                    padding: '0.75rem', 
-                    backgroundColor: '#f3f4f6', 
-                    borderRadius: '9999px', 
-                    color: '#4b5563',
-                    display: 'flex',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.color = '#FF2020'}
-                  onMouseOut={(e) => e.currentTarget.style.color = '#4b5563'}>
-                    <FaTelegram size={24} />
-                  </a>
-                  <a href="#" style={{ 
-                    padding: '0.75rem', 
-                    backgroundColor: '#f3f4f6', 
-                    borderRadius: '9999px', 
-                    color: '#4b5563',
-                    display: 'flex',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.color = '#FF2020'}
-                  onMouseOut={(e) => e.currentTarget.style.color = '#4b5563'}>
-                    <FaDiscord size={24} />
-                  </a>
+                  {socialLinks.map((social, index) => {
+                    const Icon = social.icon;
+                    return (
+                      <a 
+                        key={index}
+                        href={social.href}
+                        aria-label={social.label} 
+                        style={{ 
+                          padding: '0.75rem', 
+                          backgroundColor: '#f3f4f6', 
+                          borderRadius: '9999px', 
+                          color: '#4b5563',
+                          display: 'flex',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseOver={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                          e.currentTarget.style.color = '#FF2020';
+                        }}
+                        onMouseOut={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                          e.currentTarget.style.color = '#4b5563';
+                        }}
+                      >
+                        <Icon size={24} />
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -310,4 +307,6 @@ export default function ContactPage() {
       <Footer />
     </>
   )
-} 
+}
+
+export default ContactPage 
