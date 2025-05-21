@@ -2,41 +2,34 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePumpFun } from '@/hooks/usePumpFun'
+import usePumpFun, { SortOption, FilterOptions } from '@/hooks/usePumpFun'
 import { NewPairData } from '@/types/market'
 import { 
-  FaFilter, 
   FaSortAmountDown, 
   FaSortAmountDownAlt, 
+  FaExternalLinkAlt,
   FaSpinner, 
   FaCheckCircle, 
   FaTimesCircle,
   FaExclamationTriangle,
   FaSyncAlt,
   FaClock,
-  FaHourglassHalf,
   FaArrowUp,
   FaArrowDown,
+  FaHourglassHalf,
+  FaInfoCircle,
+  FaBolt,
+  FaShieldAlt,
+  FaCheck,
+  FaFilter,
   FaSort,
   FaSortUp,
   FaSortDown,
-  FaCheck,
   FaSearch
 } from 'react-icons/fa'
 
 // Import formatters
 import { formatCurrency, formatTimeAgo, formatPercent, formatNumber, formatPrice } from '@/utils/formatters'
-
-// Sorting options
-export type SortOption = 'newest' | 'poolSize' | 'priceChange' | 'volume';
-
-// Filtering options
-export interface FilterOptions {
-  minPoolSize?: number;
-  maxAge?: number; // in hours
-  pairWith?: string; // e.g., 'USDC', 'SOL'
-  verified?: boolean;
-}
 
 // Price change formatter with color
 const PriceChange = ({ value }: { value: number }) => {

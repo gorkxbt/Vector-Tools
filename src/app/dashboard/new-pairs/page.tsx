@@ -7,11 +7,11 @@ import StatsCard from '@/components/dashboard/StatsCard'
 import SocialLink from '@/components/dashboard/SocialLink'
 import { motion } from 'framer-motion'
 import { FaRocket, FaTwitter, FaDiscord, FaGlobe } from 'react-icons/fa'
-import { usePumpFun } from '@/hooks/usePumpFun'
+import usePumpFun from '@/hooks/usePumpFun'
 import { formatCurrency } from '@/utils/formatters'
 
 const NewPairsPage = () => {
-  const { pairs, isLoading, refresh } = usePumpFun();
+  const { pairs, loading, refresh } = usePumpFun();
   const [stats, setStats] = useState({
     newPairsCount: 0,
     totalVolume: 0,
@@ -120,28 +120,28 @@ const NewPairsPage = () => {
             title="New Pairs (24h)"
             value={stats.newPairsCount}
             subtitle={pairs && pairs.length > 0 ? `${pairs.length} total pairs tracked` : 'Loading data...'}
-            loading={isLoading}
+            loading={loading}
           />
           
           <StatsCard
             title="Trading Volume"
             value={formatCurrency(stats.totalVolume)}
             subtitle="Based on 24h volume data"
-            loading={isLoading}
+            loading={loading}
           />
           
           <StatsCard
             title="Top Gainer (24h)"
             value={stats.topGainer.symbol}
-            subtitle={isLoading ? 'Loading...' : `+${stats.topGainer.priceChange?.toFixed(2) || 0}%`}
-            loading={isLoading}
+            subtitle={loading ? 'Loading...' : `+${stats.topGainer.priceChange?.toFixed(2) || 0}%`}
+            loading={loading}
           />
           
           <StatsCard
             title="Highest Liquidity"
             value={formatCurrency(stats.highestLiquidity.poolSize)}
-            subtitle={isLoading ? 'Loading...' : `${stats.highestLiquidity.symbol}/${stats.highestLiquidity.pairWithSymbol} pair`}
-            loading={isLoading}
+            subtitle={loading ? 'Loading...' : `${stats.highestLiquidity.symbol}/${stats.highestLiquidity.pairWithSymbol} pair`}
+            loading={loading}
           />
         </div>
         

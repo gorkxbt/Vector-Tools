@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getNewPumpFunPairs } from '@/services/api';
 import { NewPairData } from '@/types/market';
 
 // Sorting options
 export type SortOption = 'newest' | 'poolSize' | 'priceChange' | 'volume';
-export type SortOrder = 'asc' | 'desc';
 
 // Filtering options
 export interface FilterOptions {
@@ -14,199 +13,108 @@ export interface FilterOptions {
   maxAge?: number; // in hours
   pairWith?: string; // e.g., 'USDC', 'SOL'
   verified?: boolean;
-  search?: string;
-  riskLevel?: 'LOW' | 'MEDIUM' | 'HIGH' | null;
 }
 
 /**
- * Custom hook to fetch and manage PumpFun token pair data
+ * Custom hook for PumpFun new pairs data
  */
 export default function usePumpFun(initialFilters: FilterOptions = {}) {
   const [pairs, setPairs] = useState<NewPairData[]>([]);
   const [filteredPairs, setFilteredPairs] = useState<NewPairData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterOptions>(initialFilters);
-  const [sortConfig, setSortConfig] = useState<{field: SortOption, order: SortOrder}>({
-    field: 'newest',
-    order: 'desc'
-  });
-  
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [filters, setFilters] = useState<FilterOptions>(initialFilters);
+  const [refreshInterval, setRefreshInterval] = useState<number>(60000); // 1 minute default
 
-  /**
-   * Apply current filter and sort settings to the pairs data
-   */
-  const applyFiltersAndSort = useCallback(() => {
-    let result = [...pairs];
-    
-    // Apply filters
-    if (filter.verified !== undefined) {
-      result = result.filter(pair => pair.verified === filter.verified);
-    }
-    
-    if (filter.minPoolSize) {
-      result = result.filter(pair => pair.poolSize >= (filter.minPoolSize || 0));
-    }
-    
-    if (filter.maxAge) {
-      const cutoffTime = new Date();
-      cutoffTime.setHours(cutoffTime.getHours() - (filter.maxAge || 24));
-      result = result.filter(pair => new Date(pair.createdAt) >= cutoffTime);
-    }
-    
-    if (filter.pairWith) {
-      result = result.filter(pair => 
-        pair.pairWithSymbol.toLowerCase() === filter.pairWith?.toLowerCase()
-      );
-    }
-    
-    if (filter.search) {
-      const searchTerm = filter.search.toLowerCase();
-      result = result.filter(
-        pair => 
-          pair.name.toLowerCase().includes(searchTerm) || 
-          pair.symbol.toLowerCase().includes(searchTerm)
-      );
-    }
-    
-    if (filter.riskLevel) {
-      result = result.filter(pair => pair.rugPullRisk === filter.riskLevel);
-    }
-    
-    // Apply sorting
-    result.sort((a, b) => {
-      let compareA, compareB;
-      
-      switch (sortConfig.field) {
-        case 'newest':
-          compareA = new Date(a.createdAt).getTime();
-          compareB = new Date(b.createdAt).getTime();
-          break;
-        case 'poolSize':
-          compareA = a.poolSize;
-          compareB = b.poolSize;
-          break;
-        case 'priceChange':
-          compareA = a.priceChange;
-          compareB = b.priceChange;
-          break;
-        case 'volume':
-          compareA = a.volume24h;
-          compareB = b.volume24h;
-          break;
-        default:
-          compareA = new Date(a.createdAt).getTime();
-          compareB = new Date(b.createdAt).getTime();
-      }
-      
-      if (sortConfig.order === 'asc') {
-        return compareA - compareB;
-      } else {
-        return compareB - compareA;
-      }
-    });
-    
-    setFilteredPairs(result);
-  }, [pairs, filter, sortConfig]);
-
-  /**
-   * Fetch pairs data from API
-   */
-  const fetchPairsData = useCallback(async () => {
-    setIsLoading(true);
+  // Fetch new pairs data
+  const fetchPairs = useCallback(async () => {
+    setLoading(true);
     setError(null);
     
     try {
-      const data = await getNewPumpFunPairs();
-      setPairs(data);
+      const newPairs = await getNewPumpFunPairs();
+      setPairs(newPairs);
+      // Initial filtering and sorting will be handled by the useEffect below
     } catch (err) {
       console.error('Error fetching PumpFun pairs:', err);
-      setError('Failed to load new pairs. Please try again.');
+      setError('Failed to load new token pairs');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   }, []);
 
-  // Initial data fetching
+  // Apply filtering and sorting whenever pairs, filters, or sortBy changes
   useEffect(() => {
-    fetchPairsData();
+    if (!pairs.length) return;
     
-    // Set up auto-refresh interval (every 2 minutes)
-    intervalRef.current = setInterval(() => {
-      fetchPairsData();
-    }, 2 * 60 * 1000);
+    let result = [...pairs];
     
-    // Clean up interval on unmount
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [fetchPairsData]);
-  
-  // Apply filters and sorting when pairs or filter/sort settings change
+    // Apply filters
+    if (filters.minPoolSize) {
+      result = result.filter(pair => pair.poolSize >= (filters.minPoolSize || 0));
+    }
+    
+    if (filters.pairWith) {
+      result = result.filter(pair => pair.pairWithSymbol.toLowerCase() === filters.pairWith?.toLowerCase());
+    }
+    
+    if (filters.maxAge) {
+      const cutoffTime = new Date();
+      cutoffTime.setHours(cutoffTime.getHours() - (filters.maxAge || 24));
+      result = result.filter(pair => new Date(pair.createdAt) >= cutoffTime);
+    }
+    
+    if (filters.verified !== undefined) {
+      result = result.filter(pair => pair.verified === filters.verified);
+    }
+    
+    // Apply sorting
+    switch (sortBy) {
+      case 'newest':
+        result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        break;
+      case 'poolSize':
+        result.sort((a, b) => b.poolSize - a.poolSize);
+        break;
+      case 'priceChange':
+        result.sort((a, b) => b.priceChange - a.priceChange);
+        break;
+      case 'volume':
+        result.sort((a, b) => b.volume24h - a.volume24h);
+        break;
+    }
+    
+    setFilteredPairs(result);
+  }, [pairs, filters, sortBy]);
+
+  // Set up automatic refresh
   useEffect(() => {
-    applyFiltersAndSort();
-  }, [pairs, filter, sortConfig, applyFiltersAndSort]);
-  
-  // Update filter state
-  const updateFilters = (newFilterOptions: Partial<FilterOptions>) => {
-    setFilter(prevFilter => ({
-      ...prevFilter,
-      ...newFilterOptions
-    }));
-  };
-  
-  // Clear all filters
-  const clearFilters = () => {
-    setFilter({});
-  };
-  
-  // Set sort field and order
-  const setSortBy = (sortOption: SortOption) => {
-    setSortConfig(prev => {
-      // If clicking the same field, toggle order
-      if (prev.field === sortOption) {
-        return {
-          ...prev,
-          order: prev.order === 'asc' ? 'desc' : 'asc'
-        };
-      }
-      
-      // Otherwise, set new field with default desc order
-      return {
-        field: sortOption,
-        order: 'desc'
-      };
-    });
-  };
-  
-  // Manual refresh
-  const refresh = () => {
-    fetchPairsData();
-  };
-  
+    fetchPairs();
+    
+    if (refreshInterval > 0) {
+      const interval = setInterval(fetchPairs, refreshInterval);
+      return () => clearInterval(interval);
+    }
+  }, [fetchPairs, refreshInterval]);
+
+  // Update filters
+  const updateFilters = useCallback((newFilters: Partial<FilterOptions>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
+  }, []);
+
   return {
-    // Data
     pairs: filteredPairs,
-    allPairs: pairs,
-    loading: isLoading,
-    error,
-    
-    // Filter and sort state
-    filter,
-    sortBy: sortConfig.field,
-    sortOrder: sortConfig.order,
-    
-    // Actions
-    updateFilters,
-    clearFilters,
-    setSortBy,
-    refresh,
-    
-    // Stats
     totalCount: pairs.length,
-    filteredCount: filteredPairs.length
+    filteredCount: filteredPairs.length,
+    loading,
+    error,
+    sortBy,
+    filters,
+    refreshInterval,
+    setSortBy,
+    updateFilters,
+    setRefreshInterval,
+    refresh: fetchPairs
   };
 } 
