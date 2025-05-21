@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { FaTwitter, FaChartBar, FaDatabase } from 'react-icons/fa'
 
 // Mock alpha score data

@@ -16,8 +16,8 @@ interface PhantomProvider {
   disconnect: () => Promise<void>;
   request: (request: {
     method: string;
-    params?: any;
-  }) => Promise<any>;
+    params?: Record<string, unknown>;
+  }) => Promise<unknown>;
 }
 
 declare global {

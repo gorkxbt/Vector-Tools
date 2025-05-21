@@ -70,7 +70,14 @@ async function fetchWithRetry<T>(
  */
 export const getSolanaPrice = async (): Promise<SolanaMarketData> => {
   try {
-    const data = await fetchWithRetry<any>(API_ENDPOINTS.SOLANA_PRICE);
+    interface SolanaPriceResponse {
+      solana: {
+        usd: number;
+        usd_24h_change: number;
+      };
+    }
+    
+    const data = await fetchWithRetry<SolanaPriceResponse>(API_ENDPOINTS.SOLANA_PRICE);
     
     return {
       price: data.solana.usd || 0,
@@ -102,8 +109,17 @@ export const getJupiterTokens = async (): Promise<TokenInfo[]> => {
  */
 export const getNewPumpFunPairs = async (): Promise<NewPairData[]> => {
   try {
+    interface PumpFunToken {
+      mint: string;
+      name?: string;
+      symbol?: string;
+      bondingCurve?: string;
+      timestamp?: string;
+      status?: string;
+    }
+    
     // Fetch tokens from PumpFun API
-    const response = await fetchWithRetry<any>(API_ENDPOINTS.PUMP_FUN_API, {
+    const response = await fetchWithRetry<PumpFunToken[]>(API_ENDPOINTS.PUMP_FUN_API, {
       headers: {
         'Accept': 'application/json'
       },
@@ -119,7 +135,7 @@ export const getNewPumpFunPairs = async (): Promise<NewPairData[]> => {
     }
     
     // Transform the PumpFun API response to match our NewPairData type
-    return tokens.map((token: any) => {
+    return tokens.map((token: PumpFunToken) => {
       // Calculate approximate values for missing fields
       const createdAt = token.timestamp ? new Date(token.timestamp) : new Date();
       const ageInHours = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
@@ -134,7 +150,7 @@ export const getNewPumpFunPairs = async (): Promise<NewPairData[]> => {
       const holders = Math.floor(20 + Math.random() * 500);
       
       // Determine risk level based on the age and other factors
-      let rugPullRisk = 'HIGH';
+      let rugPullRisk: 'LOW' | 'MEDIUM' | 'HIGH' = 'HIGH';
       if (ageInHours > 168 && poolSize > 50000) { // > 7 days and good liquidity
         rugPullRisk = 'LOW';
       } else if (ageInHours > 48 && poolSize > 10000) { // > 2 days and decent liquidity
@@ -234,9 +250,20 @@ const getMockPumpFunPairs = (): NewPairData[] => {
  */
 export const getTokenPrice = async (mintAddress: string): Promise<TokenPrice | null> => {
   try {
+    interface BirdeyeTokenResponse {
+      data?: {
+        value?: number;
+        symbol?: string;
+        name?: string;
+        priceChange24h?: number;
+        volume24h?: number;
+        marketCap?: number;
+      };
+    }
+    
     const url = `https://api.birdeye.so/v1/token/price?address=${mintAddress}`;
     
-    const response = await fetchWithRetry<any>(url, {
+    const response = await fetchWithRetry<BirdeyeTokenResponse>(url, {
       headers: {
         'X-API-KEY': process.env.BIRDEYE_API_KEY || '',
       }
@@ -281,9 +308,18 @@ export const getTokenHistoricalPrices = async (
       limit = 12;
     }
     
+    interface PriceHistoryResponse {
+      data?: {
+        items?: Array<{
+          unixTime: number;
+          value: number;
+        }>;
+      };
+    }
+    
     const url = `https://api.birdeye.so/v1/token/price_history?address=${mintAddress}&interval=${interval}&limit=${limit}`;
     
-    const response = await fetchWithRetry<any>(url, {
+    const response = await fetchWithRetry<PriceHistoryResponse>(url, {
       headers: {
         'X-API-KEY': process.env.BIRDEYE_API_KEY || '',
       }
@@ -293,7 +329,7 @@ export const getTokenHistoricalPrices = async (
       return [];
     }
     
-    return response.data.items.map((item: any) => ({
+    return response.data.items.map((item) => ({
       timestamp: item.unixTime,
       price: item.value
     }));
@@ -310,8 +346,27 @@ export const getWalletTokenBalances = async (
   walletAddress: string
 ): Promise<TokenInfo[]> => {
   try {
+    interface SolanaRpcResponse {
+      result?: {
+        value?: Array<{
+          account: {
+            data: {
+              parsed: {
+                info: {
+                  mint: string;
+                  tokenAmount: {
+                    uiAmount: number;
+                  };
+                };
+              };
+            };
+          };
+        }>;
+      };
+    }
+    
     // Use getTokenAccountsByOwner RPC method
-    const response = await fetchWithRetry<any>(API_ENDPOINTS.SOLANA_RPC, {
+    const response = await fetchWithRetry<SolanaRpcResponse>(API_ENDPOINTS.SOLANA_RPC, {
       method: 'POST',
       body: JSON.stringify({
         jsonrpc: '2.0',

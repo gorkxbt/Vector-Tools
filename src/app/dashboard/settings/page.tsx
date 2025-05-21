@@ -6,6 +6,9 @@ import { FaCog, FaUser, FaBell, FaShieldAlt, FaSave, FaExclamationTriangle, FaMo
 import { motion } from 'framer-motion'
 
 // User settings types
+type TabId = 'profile' | 'preferences' | 'security' | 'wallet';
+type NotificationKey = 'priceAlerts' | 'tradeExecutions' | 'systemUpdates' | 'strategyUpdates' | 'newsletterEmails';
+
 interface UserSettings {
   profile: {
     username: string;
@@ -65,7 +68,7 @@ const initialSettings: UserSettings = {
 
 const SettingsPage = () => {
   const [settings, setSettings] = useState<UserSettings>(initialSettings);
-  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'security' | 'wallet'>('profile');
+  const [activeTab, setActiveTab] = useState<TabId>('profile');
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null);
   
@@ -79,14 +82,14 @@ const SettingsPage = () => {
       const [parentField, childField] = field.split('.');
       
       // Type-safe way to handle the nested objects
-      // @ts-ignore - This is safe because we know the structure of our settings object
+      // @ts-expect-error - This is safe because we know the structure of our settings object
       if (newSettings[section][parentField]) {
-        // @ts-ignore - This is safe because we know the structure of our settings object
+        // @ts-expect-error - This is safe because we know the structure of our settings object
         newSettings[section][parentField][childField] = value;
       }
     } else {
       // Handle top-level fields
-      // @ts-ignore - This is safe because we know the structure of our settings object
+      // @ts-expect-error - This is safe because we know the structure of our settings object
       newSettings[section][field] = value;
     }
     
@@ -113,10 +116,10 @@ const SettingsPage = () => {
   // Render tabs menu
   const renderTabMenu = () => {
     const tabs = [
-      { id: 'profile', icon: <FaUser />, label: 'Profile' },
-      { id: 'preferences', icon: <FaCog />, label: 'Preferences' },
-      { id: 'security', icon: <FaShieldAlt />, label: 'Security' },
-      { id: 'wallet', icon: <FaWallet />, label: 'Wallet' },
+      { id: 'profile' as TabId, icon: <FaUser />, label: 'Profile' },
+      { id: 'preferences' as TabId, icon: <FaCog />, label: 'Preferences' },
+      { id: 'security' as TabId, icon: <FaShieldAlt />, label: 'Security' },
+      { id: 'wallet' as TabId, icon: <FaWallet />, label: 'Wallet' },
     ];
     
     return (
@@ -128,7 +131,7 @@ const SettingsPage = () => {
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id)}
             style={{ 
               padding: '1rem 1.5rem',
               display: 'flex',
@@ -356,11 +359,11 @@ const SettingsPage = () => {
           
           <div style={{ display: 'grid', gap: '1rem' }}>
             {[
-              { id: 'priceAlerts', label: 'Price Alerts' },
-              { id: 'tradeExecutions', label: 'Trade Executions' },
-              { id: 'systemUpdates', label: 'System Updates' },
-              { id: 'strategyUpdates', label: 'Strategy Updates' },
-              { id: 'newsletterEmails', label: 'Newsletter Emails' }
+              { id: 'priceAlerts' as NotificationKey, label: 'Price Alerts' },
+              { id: 'tradeExecutions' as NotificationKey, label: 'Trade Executions' },
+              { id: 'systemUpdates' as NotificationKey, label: 'System Updates' },
+              { id: 'strategyUpdates' as NotificationKey, label: 'Strategy Updates' },
+              { id: 'newsletterEmails' as NotificationKey, label: 'Newsletter Emails' }
             ].map((item) => (
               <label 
                 key={item.id} 
@@ -372,7 +375,7 @@ const SettingsPage = () => {
               >
                 <input 
                   type="checkbox" 
-                  checked={(settings.preferences.notifications as any)[item.id]} 
+                  checked={settings.preferences.notifications[item.id]} 
                   onChange={(e) => handleChange('preferences', `notifications.${item.id}`, e.target.checked)}
                   disabled={!isEditing}
                   style={{ marginRight: '0.75rem', cursor: isEditing ? 'pointer' : 'default' }}

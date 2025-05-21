@@ -1,98 +1,43 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getNewPumpFunPairs } from '@/services/api';
 import { NewPairData } from '@/types/market';
 
-type SortField = 'createdAt' | 'currentPrice' | 'priceChange' | 'poolSize' | 'volume24h' | 'txCount' | 'holders';
-type SortOrder = 'asc' | 'desc';
-type FilterOptions = {
-  verified?: boolean;
+// Sorting options
+export type SortOption = 'newest' | 'poolSize' | 'priceChange' | 'volume';
+export type SortOrder = 'asc' | 'desc';
+
+// Filtering options
+export interface FilterOptions {
   minPoolSize?: number;
   maxAge?: number; // in hours
+  pairWith?: string; // e.g., 'USDC', 'SOL'
+  verified?: boolean;
   search?: string;
   riskLevel?: 'LOW' | 'MEDIUM' | 'HIGH' | null;
-};
-
-interface PumpFunData {
-  pairs: NewPairData[];
-  isLoading: boolean;
-  error: string | null;
-  lastUpdated: Date | null;
-  filteredPairs: NewPairData[];
-  setFilter: (options: Partial<FilterOptions>) => void;
-  clearFilters: () => void;
-  setSort: (field: SortField, order: SortOrder) => void;
-  refresh: () => Promise<void>;
 }
 
 /**
  * Custom hook to fetch and manage PumpFun token pair data
  */
-export function usePumpFun(): PumpFunData {
+export default function usePumpFun(initialFilters: FilterOptions = {}) {
   const [pairs, setPairs] = useState<NewPairData[]>([]);
   const [filteredPairs, setFilteredPairs] = useState<NewPairData[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [filter, setFilterState] = useState<FilterOptions>({});
-  const [sortConfig, setSortConfig] = useState<{field: SortField, order: SortOrder}>({
-    field: 'createdAt',
+  const [filter, setFilter] = useState<FilterOptions>(initialFilters);
+  const [sortConfig, setSortConfig] = useState<{field: SortOption, order: SortOrder}>({
+    field: 'newest',
     order: 'desc'
   });
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch data on mount and set up refresh interval
-  useEffect(() => {
-    // Immediately fetch data on mount
-    fetchPairsData();
-    
-    // Set up interval to refresh data every 15 seconds for real-time updates
-    intervalRef.current = setInterval(fetchPairsData, 15000);
-    
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, []);
-
-  // Apply filters and sorting when pairs or filter/sort settings change
-  useEffect(() => {
-    applyFiltersAndSort();
-  }, [pairs, filter, sortConfig]);
-
-  /**
-   * Fetch new token pair data from the API
-   */
-  const fetchPairsData = async () => {
-    try {
-      setIsLoading(true);
-      const newPairs = await getNewPumpFunPairs();
-      
-      // Ensure we're getting real data, not empty arrays or mock data
-      if (Array.isArray(newPairs) && newPairs.length > 0) {
-        setPairs(newPairs);
-        setLastUpdated(new Date());
-        setError(null);
-      } else {
-        setError('API returned no token pairs or invalid data');
-        console.error('Invalid data from API:', newPairs);
-      }
-    } catch (err) {
-      setError('Failed to fetch token pairs');
-      console.error('Error fetching PumpFun pairs:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   /**
    * Apply current filter and sort settings to the pairs data
    */
-  const applyFiltersAndSort = () => {
+  const applyFiltersAndSort = useCallback(() => {
     let result = [...pairs];
     
     // Apply filters
@@ -110,12 +55,18 @@ export function usePumpFun(): PumpFunData {
       result = result.filter(pair => new Date(pair.createdAt) >= cutoffTime);
     }
     
+    if (filter.pairWith) {
+      result = result.filter(pair => 
+        pair.pairWithSymbol.toLowerCase() === filter.pairWith?.toLowerCase()
+      );
+    }
+    
     if (filter.search) {
       const searchTerm = filter.search.toLowerCase();
-      result = result.filter(pair => 
-        pair.name.toLowerCase().includes(searchTerm) ||
-        pair.symbol.toLowerCase().includes(searchTerm) ||
-        pair.address.toLowerCase() === searchTerm
+      result = result.filter(
+        pair => 
+          pair.name.toLowerCase().includes(searchTerm) || 
+          pair.symbol.toLowerCase().includes(searchTerm)
       );
     }
     
@@ -125,73 +76,137 @@ export function usePumpFun(): PumpFunData {
     
     // Apply sorting
     result.sort((a, b) => {
-      const fieldA = a[sortConfig.field as keyof NewPairData];
-      const fieldB = b[sortConfig.field as keyof NewPairData];
+      let compareA, compareB;
       
-      // Handle special case for dates
-      if (sortConfig.field === 'createdAt') {
-        const dateA = new Date(a.createdAt).getTime();
-        const dateB = new Date(b.createdAt).getTime();
-        return sortConfig.order === 'asc' ? dateA - dateB : dateB - dateA;
+      switch (sortConfig.field) {
+        case 'newest':
+          compareA = new Date(a.createdAt).getTime();
+          compareB = new Date(b.createdAt).getTime();
+          break;
+        case 'poolSize':
+          compareA = a.poolSize;
+          compareB = b.poolSize;
+          break;
+        case 'priceChange':
+          compareA = a.priceChange;
+          compareB = b.priceChange;
+          break;
+        case 'volume':
+          compareA = a.volume24h;
+          compareB = b.volume24h;
+          break;
+        default:
+          compareA = new Date(a.createdAt).getTime();
+          compareB = new Date(b.createdAt).getTime();
       }
       
-      // Handle numeric values
-      if (typeof fieldA === 'number' && typeof fieldB === 'number') {
-        return sortConfig.order === 'asc' ? fieldA - fieldB : fieldB - fieldA;
+      if (sortConfig.order === 'asc') {
+        return compareA - compareB;
+      } else {
+        return compareB - compareA;
       }
-      
-      // Convert to string for other types
-      const strA = String(fieldA || '');
-      const strB = String(fieldB || '');
-      
-      if (strA < strB) return sortConfig.order === 'asc' ? -1 : 1;
-      if (strA > strB) return sortConfig.order === 'asc' ? 1 : -1;
-      return 0;
     });
     
     setFilteredPairs(result);
-  };
+  }, [pairs, filter, sortConfig]);
 
   /**
-   * Update filter options
+   * Fetch pairs data from API
    */
-  const setFilter = (options: Partial<FilterOptions>) => {
-    setFilterState(prev => ({
-      ...prev,
-      ...options
+  const fetchPairsData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const data = await getNewPumpFunPairs();
+      setPairs(data);
+    } catch (err) {
+      console.error('Error fetching PumpFun pairs:', err);
+      setError('Failed to load new pairs. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Initial data fetching
+  useEffect(() => {
+    fetchPairsData();
+    
+    // Set up auto-refresh interval (every 2 minutes)
+    intervalRef.current = setInterval(() => {
+      fetchPairsData();
+    }, 2 * 60 * 1000);
+    
+    // Clean up interval on unmount
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [fetchPairsData]);
+  
+  // Apply filters and sorting when pairs or filter/sort settings change
+  useEffect(() => {
+    applyFiltersAndSort();
+  }, [pairs, filter, sortConfig, applyFiltersAndSort]);
+  
+  // Update filter state
+  const updateFilters = (newFilterOptions: Partial<FilterOptions>) => {
+    setFilter(prevFilter => ({
+      ...prevFilter,
+      ...newFilterOptions
     }));
   };
-
-  /**
-   * Clear all filters
-   */
+  
+  // Clear all filters
   const clearFilters = () => {
-    setFilterState({});
+    setFilter({});
   };
-
-  /**
-   * Set sorting configuration
-   */
-  const setSort = (field: SortField, order: SortOrder) => {
-    setSortConfig({ field, order });
+  
+  // Set sort field and order
+  const setSortBy = (sortOption: SortOption) => {
+    setSortConfig(prev => {
+      // If clicking the same field, toggle order
+      if (prev.field === sortOption) {
+        return {
+          ...prev,
+          order: prev.order === 'asc' ? 'desc' : 'asc'
+        };
+      }
+      
+      // Otherwise, set new field with default desc order
+      return {
+        field: sortOption,
+        order: 'desc'
+      };
+    });
   };
-
-  /**
-   * Manually refresh data
-   */
-  const refresh = async () => {
-    return await fetchPairsData();
+  
+  // Manual refresh
+  const refresh = () => {
+    fetchPairsData();
   };
-
+  
   return {
-    pairs,
-    isLoading,
+    // Data
+    pairs: filteredPairs,
+    allPairs: pairs,
+    loading: isLoading,
     error,
-    lastUpdated,
-    filteredPairs,
-    setFilter,
+    
+    // Filter and sort state
+    filter,
+    sortBy: sortConfig.field,
+    sortOrder: sortConfig.order,
+    
+    // Actions
+    updateFilters,
     clearFilters,
-    setSort,
-    refresh
+    setSortBy,
+    refresh,
+    
+    // Stats
+    totalCount: pairs.length,
+    filteredCount: filteredPairs.length
   };
 } 

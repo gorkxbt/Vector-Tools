@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { FaCaretUp, FaCaretDown, FaInfoCircle, FaWallet, FaBitcoin, FaSpinner } from 'react-icons/fa'
+import React, { useState, useEffect } from 'react'
+import { FaCaretUp, FaCaretDown, FaInfoCircle, FaWallet, FaSpinner } from 'react-icons/fa'
 import { motion } from 'framer-motion'
 
 // Phantom wallet interface
@@ -13,7 +13,7 @@ type PhantomWindow = Window & {
     isConnected: boolean;
     publicKey?: { toString: () => string };
     signMessage?: (message: Uint8Array) => Promise<{ signature: Uint8Array }>;
-    request: (request: { method: string, params?: any }) => Promise<any>;
+    request: (request: { method: string, params?: Record<string, unknown> }) => Promise<unknown>;
   }
 }
 

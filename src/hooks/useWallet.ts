@@ -1,15 +1,18 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { TokenInfo } from '@/types/tokens';
 import { 
   connectWallet, 
   disconnectWallet, 
-  getWalletProvider,
-  requestNetworkSwitch
+  getWalletProvider, 
+  requestNetworkSwitch 
 } from '@/utils/wallet';
 import { getWalletTokenBalances, getTokenPrice } from '@/services/api';
-import { TokenInfo } from '@/types/tokens';
 
+/**
+ * Wallet state interface
+ */
 interface WalletState {
   connected: boolean;
   connecting: boolean;
@@ -21,6 +24,9 @@ interface WalletState {
   isCorrectNetwork: boolean;
 }
 
+/**
+ * Hook return interface
+ */
 interface UseWalletHook {
   wallet: WalletState;
   connect: () => Promise<void>;
@@ -30,7 +36,7 @@ interface UseWalletHook {
 }
 
 /**
- * Custom hook for interacting with Phantom wallet
+ * Custom hook for Solana wallet integration with Phantom
  */
 export function useWallet(): UseWalletHook {
   const [walletState, setWalletState] = useState<WalletState>({
@@ -43,6 +49,58 @@ export function useWallet(): UseWalletHook {
     error: null,
     isCorrectNetwork: false
   });
+
+  /**
+   * Refresh wallet balance and token data
+   */
+  const refreshBalance = useCallback(async () => {
+    if (!walletState.address) return;
+    
+    try {
+      // Get token balances from the wallet
+      const tokenBalances = await getWalletTokenBalances(walletState.address);
+      
+      // Get token prices and calculate values
+      let totalValue = 0;
+      const tokensWithValue = await Promise.all(tokenBalances.map(async (token) => {
+        try {
+          if (token.balance && token.balance > 0) {
+            const priceData = await getTokenPrice(token.address);
+            if (priceData && priceData.price) {
+              const value = token.balance * priceData.price;
+              totalValue += value;
+              return {
+                ...token,
+                value
+              };
+            }
+          }
+          return token;
+        } catch (err) {
+          console.error(`Error getting price for token ${token.symbol}:`, err);
+          return token;
+        }
+      }));
+      
+      // Sort tokens by value
+      const sortedTokens = tokensWithValue.sort((a, b) => 
+        (b.value || 0) - (a.value || 0)
+      );
+      
+      setWalletState(prev => ({
+        ...prev,
+        tokens: sortedTokens,
+        totalValue,
+        balance: totalValue, // Use total value as the main balance figure
+      }));
+    } catch (error) {
+      console.error('Error refreshing wallet balance:', error);
+      setWalletState(prev => ({ 
+        ...prev, 
+        error: 'Failed to refresh wallet data.' 
+      }));
+    }
+  }, [walletState.address]);
 
   /**
    * Initialize wallet state on component mount
@@ -75,8 +133,16 @@ export function useWallet(): UseWalletHook {
     
     initWallet();
     
+    // Define the event type for wallet connection changes
+    interface WalletConnectionEvent {
+      detail: {
+        connected: boolean;
+        address: string | null;
+      }
+    }
+    
     // Listen for wallet connection state changes
-    window.addEventListener('wallet-connection-change', (event: any) => {
+    const handleWalletConnectionChange = (event: CustomEvent<WalletConnectionEvent['detail']>) => {
       if (event.detail && event.detail.connected) {
         setWalletState(prev => ({
           ...prev,
@@ -95,9 +161,14 @@ export function useWallet(): UseWalletHook {
           totalValue: 0
         }));
       }
-    });
+    };
     
-  }, []);
+    window.addEventListener('wallet-connection-change', handleWalletConnectionChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('wallet-connection-change', handleWalletConnectionChange as EventListener);
+    };
+  }, [refreshBalance]);
 
   /**
    * Connect to Phantom wallet
@@ -171,58 +242,6 @@ export function useWallet(): UseWalletHook {
       }));
     }
   };
-
-  /**
-   * Refresh wallet balance and token data
-   */
-  const refreshBalance = useCallback(async () => {
-    if (!walletState.address) return;
-    
-    try {
-      // Get token balances from the wallet
-      const tokenBalances = await getWalletTokenBalances(walletState.address);
-      
-      // Get token prices and calculate values
-      let totalValue = 0;
-      const tokensWithValue = await Promise.all(tokenBalances.map(async (token) => {
-        try {
-          if (token.balance && token.balance > 0) {
-            const priceData = await getTokenPrice(token.address);
-            if (priceData && priceData.price) {
-              const value = token.balance * priceData.price;
-              totalValue += value;
-              return {
-                ...token,
-                value
-              };
-            }
-          }
-          return token;
-        } catch (err) {
-          console.error(`Error getting price for token ${token.symbol}:`, err);
-          return token;
-        }
-      }));
-      
-      // Sort tokens by value
-      const sortedTokens = tokensWithValue.sort((a, b) => 
-        (b.value || 0) - (a.value || 0)
-      );
-      
-      setWalletState(prev => ({
-        ...prev,
-        tokens: sortedTokens,
-        totalValue,
-        balance: totalValue, // Use total value as the main balance figure
-      }));
-    } catch (error) {
-      console.error('Error refreshing wallet balance:', error);
-      setWalletState(prev => ({ 
-        ...prev, 
-        error: 'Failed to refresh wallet data.' 
-      }));
-    }
-  }, [walletState.address]);
 
   return {
     wallet: walletState,
